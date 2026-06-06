@@ -1,417 +1,165 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DWForge — Data Work, forged for production</title>
-<meta name="description" content="DWForge writes production-ready DataWeave for any system, any industry. Built by a senior integration architect who got tired of doing it by hand.">
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;600;700&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --blue: #1a5fa8; --blue-light: #e8f1fb; --blue-dark: #0d3d72;
-    --text: #1a1a1a; --text-muted: #5a6475; --border: #e2e6ec;
-    --bg: #ffffff; --bg-secondary: #f7f9fc; --radius: 8px;
-    --green: #15803d; --green-light: #f0fdf4;
-    --font: 'Calibri', 'Segoe UI', Arial, sans-serif;
-  }
-  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.65; font-size: 16px; }
-  a { color: inherit; text-decoration: none; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataWeave Transformation Guides | DWForge</title>
+  <meta name="description" content="Practical DataWeave transformation guides for MuleSoft teams. Real source to target mappings with working code you can paste straight into Anypoint Studio.">
+  <link rel="canonical" href="https://dwforge.dev/articles/">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;600;700&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #1a5fa8; --blue-light: #e8f1fb; --blue-dark: #0d3d72;
+      --text: #1a1a1a; --text-muted: #5a6475; --border: #e2e6ec;
+      --bg: #ffffff; --bg-secondary: #f7f9fc; --radius: 8px;
+      --green: #15803d; --green-light: #f0fdf4;
+      --font: 'Calibri', 'Segoe UI', Arial, sans-serif;
+    }
+    body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.65; font-size: 16px; }
+    a { color: inherit; text-decoration: none; }
 
-  /* Nav */
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: #fff; position: sticky; top: 0; z-index: 100; }
-  .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
-  .logo-mark { width: 34px; height: 34px; background: var(--blue); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 0; }
-  .logo-dw { color: var(--blue); }
-  .nav-links { display: flex; align-items: center; gap: 2rem; font-size: 15px; color: var(--text-muted); }
-  .nav-links a:hover { color: var(--text); }
-  .nav-cta { background: var(--blue); color: #fff !important; padding: 8px 20px; border-radius: var(--radius); font-weight: 600; font-size: 14px; }
-  .nav-cta:hover { background: var(--blue-dark); }
+    /* Nav */
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: #fff; position: sticky; top: 0; z-index: 100; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+    .logo-mark { width: 34px; height: 34px; background: var(--blue); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 0; }
+    .logo-dw { color: var(--blue); }
+    .nav-links { display: flex; align-items: center; gap: 2rem; font-size: 15px; color: var(--text-muted); }
+    .nav-links a:hover { color: var(--text); }
+    .nav-links a.current { color: var(--text); font-weight: 600; }
+    .nav-cta { background: var(--blue); color: #fff !important; padding: 8px 20px; border-radius: var(--radius); font-weight: 600; font-size: 14px; }
+    .nav-cta:hover { background: var(--blue-dark); }
 
-  /* Hero */
-  .hero { max-width: 820px; margin: 0 auto; padding: 5rem 2rem 3rem; }
-  .hero-label { font-size: 13px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1.25rem; }
-  .hero h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 1.5rem; color: var(--text); }
-  .hero h1 em { font-style: normal; color: var(--blue); }
-  .hero-body { font-size: 1.15rem; color: var(--text-muted); max-width: 580px; margin-bottom: 2rem; line-height: 1.75; }
-  .hero-body strong { color: var(--text); font-weight: 600; }
-  .hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 3rem; }
-  .btn-main { background: var(--blue); color: #fff; padding: 13px 28px; border-radius: var(--radius); font-size: 15px; font-weight: 700; display: inline-block; font-family: var(--font); }
-  .btn-main:hover { background: var(--blue-dark); color: #fff; }
-  .btn-ghost { color: var(--text-muted); font-size: 15px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-  .btn-ghost:hover { color: var(--text); }
-  .hero-note { font-size: 13px; color: var(--text-muted); }
-  .hero-note strong { color: var(--text); }
+    /* Page header */
+    .page-header { max-width: 820px; margin: 0 auto; padding: 4rem 2rem 2rem; }
+    .page-eyebrow { font-size: 13px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
+    .page-header h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 1rem; }
+    .page-header p { font-size: 1.05rem; color: var(--text-muted); max-width: 560px; line-height: 1.75; }
 
-  /* Divider */
-  .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+    /* Guides list */
+    .guides-wrap { max-width: 820px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+    .guide-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem 2rem; margin-bottom: 1rem; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+    .guide-card:hover { border-color: #c5cdd8; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .guide-tag { font-size: 11px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
+    .guide-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 0.5rem; line-height: 1.3; }
+    .guide-card h2 a { color: var(--text); }
+    .guide-card h2 a:hover { color: var(--blue); }
+    .guide-card p { font-size: 14px; color: var(--text-muted); line-height: 1.65; margin-bottom: 0.75rem; }
+    .guide-meta { font-size: 13px; color: #8a93a0; display: flex; align-items: center; gap: 12px; }
+    .guide-meta-dot { width: 3px; height: 3px; background: #c5cdd8; border-radius: 50%; }
 
-  /* Proof strip */
-  .proof-strip { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
-  .proof-item { font-size: 13px; color: var(--text-muted); padding: 1rem 1.5rem; border-right: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
-  .proof-item:last-child { border-right: none; }
-  .proof-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; flex-shrink: 0; }
+    /* Coming soon card */
+    .guide-card.soon { background: var(--bg-secondary); border-style: dashed; }
+    .guide-card.soon h2 { color: var(--text-muted); font-weight: 600; }
+    .soon-tag { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
 
-  /* Sections */
-  .section { max-width: 980px; margin: 0 auto; padding: 4.5rem 2rem; }
-  .section-eyebrow { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 0.75rem; }
-  .section-heading { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; letter-spacing: -0.015em; margin-bottom: 0.75rem; line-height: 1.2; }
-  .section-sub { font-size: 1rem; color: var(--text-muted); max-width: 540px; line-height: 1.75; }
+    /* CTA strip */
+    .cta-strip { background: var(--blue); color: #fff; padding: 4rem 2rem; text-align: center; }
+    .cta-strip h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 700; margin-bottom: 0.6rem; letter-spacing: -0.01em; }
+    .cta-strip p { font-size: 1rem; opacity: 0.8; margin-bottom: 1.75rem; }
+    .btn-white { background: #fff; color: var(--blue); padding: 13px 28px; border-radius: var(--radius); font-size: 15px; font-weight: 700; display: inline-block; font-family: var(--font); }
+    .btn-white:hover { background: #f0f4f8; }
+    .cta-note { font-size: 13px; opacity: 0.65; margin-top: 0.75rem; }
 
-  /* Features */
-  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; margin-top: 3rem; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  .feature { padding: 1.75rem; background: #fff; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .feature:nth-child(even) { border-right: none; }
-  .feature-num { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.75rem; }
-  .feature h3 { font-size: 16px; font-weight: 700; margin-bottom: 0.5rem; }
-  .feature p { font-size: 14px; color: var(--text-muted); line-height: 1.65; }
+    /* Footer */
+    footer { padding: 2rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; font-size: 13px; color: var(--text-muted); }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a { color: var(--text-muted); }
+    .footer-links a:hover { color: var(--text); }
 
-  /* How it works */
-  .alt-bg { background: var(--bg-secondary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 3rem; }
-  .step { }
-  .step-num { font-size: 36px; font-weight: 700; color: var(--blue); opacity: 0.15; line-height: 1; margin-bottom: 0.75rem; }
-  .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 0.5rem; }
-  .step p { font-size: 14px; color: var(--text-muted); line-height: 1.65; }
-
-  /* Systems */
-  .systems-wrap { margin-top: 2.5rem; }
-  .systems-category { margin-bottom: 1.5rem; }
-  .systems-category-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
-  .systems-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .system-tag { background: #fff; border: 1px solid var(--border); border-radius: 4px; padding: 4px 11px; font-size: 13px; color: var(--text-muted); font-weight: 600; }
-
-  /* About */
-  .about-wrap { max-width: 680px; }
-  .about-wrap p { font-size: 1rem; color: var(--text-muted); line-height: 1.8; margin-bottom: 1rem; }
-  .about-wrap p strong { color: var(--text); }
-  .about-wrap p:last-child { margin-bottom: 0; }
-  .about-stamp { display: inline-flex; align-items: center; gap: 8px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 8px 16px; font-size: 13px; font-weight: 700; color: var(--text); margin-top: 1.5rem; }
-  .about-stamp span { color: var(--blue); }
-
-  /* CTA */
-  .cta-section { background: var(--blue); color: #fff; padding: 5rem 2rem; text-align: center; }
-  .cta-section h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; margin-bottom: 0.75rem; letter-spacing: -0.01em; }
-  .cta-section p { font-size: 1rem; opacity: 0.8; margin-bottom: 2rem; }
-  .btn-white { background: #fff; color: var(--blue); padding: 13px 28px; border-radius: var(--radius); font-size: 15px; font-weight: 700; display: inline-block; font-family: var(--font); }
-  .btn-white:hover { background: #f0f4f8; }
-  .cta-note { font-size: 13px; opacity: 0.65; margin-top: 1rem; }
-
-  /* Footer */
-  footer { padding: 2rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; font-size: 13px; color: var(--text-muted); }
-  .footer-links { display: flex; gap: 1.5rem; }
-  .footer-links a { color: var(--text-muted); }
-  .footer-links a:hover { color: var(--text); }
-
-  @media (max-width: 700px) {
-    nav { padding: 0.75rem 1rem; }
-    .nav-links { display: none; }
-    .hero { padding: 3rem 1.25rem 2rem; }
-    .section { padding: 3rem 1.25rem; }
-    .steps { grid-template-columns: 1fr; gap: 1.5rem; }
-    .features { grid-template-columns: 1fr; }
-    .feature { border-right: none; }
-    .proof-strip { justify-content: flex-start; }
-    footer { flex-direction: column; align-items: flex-start; }
-  }
-</style>
+    @media (max-width: 700px) {
+      nav { padding: 0.75rem 1rem; }
+      .nav-links { display: none; }
+      .page-header { padding: 3rem 1.25rem 1.5rem; }
+      .guides-wrap { padding: 1.5rem 1.25rem 3rem; }
+      footer { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
 
 <nav>
   <div class="logo">
-    <div class="logo-mark">DW</div>
-    <span><span class="logo-dw">DW</span>Forge</span>
+    <a href="../index.html" style="display:flex;align-items:center;gap:10px;">
+      <div class="logo-mark">DW</div>
+      <span><span class="logo-dw">DW</span>Forge</span>
+    </a>
   </div>
   <div class="nav-links">
-    <a href="#how-it-works">How it works</a>
-    <a href="#systems">Systems</a>
-    <a href="#enterprise">For teams</a>
-    <a href="#about">About</a>
-    <a href="pricing.html">Pricing</a>
-    <a href="tool.html" class="nav-cta">Use it free</a>
+    <a href="../index.html#how-it-works">How it works</a>
+    <a href="../index.html#systems">Systems</a>
+    <a href="../index.html#enterprise">For teams</a>
+    <a href="../index.html#about">About</a>
+    <a href="../pricing.html">Pricing</a>
+    <a href="../tool.html" class="nav-cta">Use it free</a>
   </div>
 </nav>
 
-<div class="hero">
-  <div class="hero-label">Data Work, forged for production</div>
-  <h1>Stop writing<br>DataWeave by hand.<br><em>Let us write it.</em></h1>
-  <p class="hero-body">
-    DWForge is a tool built by a <strong>senior integration architect</strong> who got tired of writing the same transformations over and over. Paste your payload, describe what you need, or just chat with it. You get working DataWeave in seconds, not hours.
-  </p>
-  <div class="hero-actions">
-    <a href="tool.html" class="btn-main">Write my DataWeave</a>
-    <a href="#how-it-works" class="btn-ghost">See how it works</a>
-  </div>
-  <div class="hero-note">Free during beta. <strong>No signup. No credit card.</strong> Just use it.</div>
+<div class="page-header">
+  <div class="page-eyebrow">DataWeave guides</div>
+  <h1>Transformation guides for MuleSoft teams</h1>
+  <p>Real source to target mappings with working DataWeave code. No theory. Each guide covers the field mapping, null handling, date conversion, and edge cases that actually trip teams up in production.</p>
 </div>
 
-<div class="proof-strip">
-  <div class="proof-item"><span class="proof-dot"></span> Works with any system</div>
-  <div class="proof-item"><span class="proof-dot"></span> Handles nulls every time</div>
-  <div class="proof-item"><span class="proof-dot"></span> Mule-aware output</div>
-  <div class="proof-item"><span class="proof-dot"></span> Compiles first time</div>
-  <div class="proof-item"><span class="proof-dot"></span> No Anypoint licence needed</div>
+<div class="guides-wrap">
+
+  <div class="guide-card">
+    <div class="guide-tag">DataWeave guide</div>
+    <h2><a href="salesforce-to-sap-dataweave.html">Salesforce to SAP DataWeave Transformation: Complete Production Guide</a></h2>
+    <p>Real field mapping, null handling, date conversion, and working DataWeave code for Salesforce to SAP S/4HANA integration via MuleSoft. Covers the nested line item handling, currency formatting, and IDoc structure that catches most teams out.</p>
+    <div class="guide-meta">
+      <span>DataWeave 2.0</span>
+      <span class="guide-meta-dot"></span>
+      <span>MuleSoft</span>
+      <span class="guide-meta-dot"></span>
+      <span>Salesforce, SAP S/4HANA</span>
+      <span class="guide-meta-dot"></span>
+      <span>15 min read</span>
+    </div>
+  </div>
+
+  <div class="guide-card">
+    <div class="guide-tag">DataWeave guide</div>
+    <h2><a href="workday-to-salesforce-dataweave.html">Workday to Salesforce DataWeave Transformation: Complete Production Guide</a></h2>
+    <p>Turning Workday worker and org data into clean Salesforce records. Covers the deep nesting, effective dating, reference resolution, and null handling that makes this mapping painful to write by hand.</p>
+    <div class="guide-meta">
+      <span>DataWeave 2.0</span>
+      <span class="guide-meta-dot"></span>
+      <span>MuleSoft</span>
+      <span class="guide-meta-dot"></span>
+      <span>Workday, Salesforce</span>
+      <span class="guide-meta-dot"></span>
+      <span>15 min read</span>
+    </div>
+  </div>
+
+  <div class="guide-card soon">
+    <div class="soon-tag">Coming soon</div>
+    <h2>Next guide in progress</h2>
+    <p>The next transformation guide is being written now. Check back shortly.</p>
+  </div>
+
 </div>
 
-<div class="section">
-  <div class="section-eyebrow">Why DWForge</div>
-  <div class="section-heading">It knows how these systems actually work</div>
-  <p class="section-sub">Not what the documentation says. What they actually do in production, with real payloads, real nulls, and real edge cases.</p>
-
-  <div class="features">
-    <div class="feature">
-      <div class="feature-num">01</div>
-      <h3>Any system, any industry</h3>
-      <p>Salesforce, SAP, Oracle, Workday, NetSuite, Shopify, Epic, Snowflake and more. If DataWeave touches it, DWForge handles it.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-num">02</div>
-      <h3>Handles nulls. Always.</h3>
-      <p>Every output accounts for nulls, missing fields, and unexpected data. That is not a feature, it is the baseline. Null pointer failures at 2am are not acceptable.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-num">03</div>
-      <h3>Three ways to use it</h3>
-      <p>Paste samples. Describe in plain English. Or chat with DWForge directly and answer a few questions. All three give you the same result.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-num">04</div>
-      <h3>Fits into your Mule flow</h3>
-      <p>It understands payload, variables, and attributes. The code drops straight into a Transform Message component. No rewrites.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-num">05</div>
-      <h3>Hours back in your sprint</h3>
-      <p>A transformation that takes a senior developer 3 hours takes DWForge 30 seconds. Your team has better things to do.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-num">06</div>
-      <h3>Explains what it wrote</h3>
-      <p>Every output includes a plain English explanation of the logic, the decisions made, and what to verify before you deploy. No black boxes.</p>
-    </div>
-  </div>
-</div>
-
-<div class="alt-bg" id="how-it-works">
-  <div class="section">
-    <div class="section-eyebrow">How it works</div>
-    <div class="section-heading">Three steps. No fluff.</div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h3>Tell it what you have</h3>
-        <p>Paste your payload and expected output. Or describe your fields in plain English. Or just chat with it and answer a few questions. Your choice.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h3>Set the context</h3>
-        <p>Pick your source and target systems. Mention null rules and date formats. Say whether it is a single record or a batch. That is all it needs.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h3>Copy it in. Done.</h3>
-        <p>Paste it into Anypoint Studio. It runs. If anything looks off, tell DWForge and it fixes it.</p>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="section" id="systems">
-  <div class="section-eyebrow">Supported systems</div>
-  <div class="section-heading">Every major enterprise platform</div>
-  <p class="section-sub">DWForge knows the field naming conventions, payload structures, and quirks of every system below. Not just the documentation. The real behaviour.</p>
-
-  <div class="systems-wrap">
-    <div class="systems-category">
-      <div class="systems-category-label">CRM</div>
-      <div class="systems-tags">
-        <span class="system-tag">Salesforce</span>
-        <span class="system-tag">Microsoft Dynamics 365 CRM</span>
-        <span class="system-tag">HubSpot</span>
-        <span class="system-tag">Zoho CRM</span>
-        <span class="system-tag">ServiceNow</span>
-      </div>
-    </div>
-    <div class="systems-category">
-      <div class="systems-category-label">ERP</div>
-      <div class="systems-tags">
-        <span class="system-tag">Microsoft D365 F&amp;O</span>
-        <span class="system-tag">SAP S/4HANA</span>
-        <span class="system-tag">SAP ECC</span>
-        <span class="system-tag">Oracle ERP Cloud</span>
-        <span class="system-tag">Oracle E-Business Suite</span>
-        <span class="system-tag">NetSuite</span>
-        <span class="system-tag">Infor</span>
-        <span class="system-tag">Epicor</span>
-      </div>
-    </div>
-    <div class="systems-category">
-      <div class="systems-category-label">HR and Payroll</div>
-      <div class="systems-tags">
-        <span class="system-tag">Workday</span>
-        <span class="system-tag">ADP</span>
-        <span class="system-tag">BambooHR</span>
-        <span class="system-tag">Deputy</span>
-        <span class="system-tag">UKG / Kronos</span>
-        <span class="system-tag">SuccessFactors</span>
-      </div>
-    </div>
-    <div class="systems-category">
-      <div class="systems-category-label">Finance and Banking</div>
-      <div class="systems-tags">
-        <span class="system-tag">Xero</span>
-        <span class="system-tag">QuickBooks</span>
-        <span class="system-tag">Sage</span>
-        <span class="system-tag">MYOB</span>
-        <span class="system-tag">Temenos</span>
-      </div>
-    </div>
-    <div class="systems-category">
-      <div class="systems-category-label">E-commerce and Retail</div>
-      <div class="systems-tags">
-        <span class="system-tag">Shopify</span>
-        <span class="system-tag">Magento</span>
-        <span class="system-tag">WooCommerce</span>
-        <span class="system-tag">BigCommerce</span>
-      </div>
-    </div>
-    <div class="systems-category">
-      <div class="systems-category-label">Healthcare</div>
-      <div class="systems-tags">
-        <span class="system-tag">Epic (EHR)</span>
-        <span class="system-tag">Cerner</span>
-        <span class="system-tag">HL7 / FHIR</span>
-      </div>
-    </div>
-    <div class="systems-category">
-      <div class="systems-category-label">Data and Analytics</div>
-      <div class="systems-tags">
-        <span class="system-tag">Snowflake</span>
-        <span class="system-tag">Databricks</span>
-        <span class="system-tag">Dremio</span>
-        <span class="system-tag">SQL Database</span>
-        <span class="system-tag">REST API / JSON</span>
-        <span class="system-tag">XML / SOAP</span>
-        <span class="system-tag">CSV / Flat File</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="alt-bg" id="about">
-  <div class="section">
-    <div class="section-eyebrow">About</div>
-    <div class="section-heading">Built by someone who got tired of doing it manually</div>
-    <div class="about-wrap">
-      <p>DWForge was built by a senior integration architect with years of hands-on delivery across large-scale enterprise projects. MuleSoft, Salesforce, SAP, D365, Workday, Dremio, the full integration stack, multiple industries, real production systems.</p>
-      <p>At some point you realise you are writing the same DataWeave patterns over and over. Null handling, date conversion, relationship traversal, batch processing. Every project, every time. There had to be a better way.</p>
-      <p>DWForge is that better way. It is not a generic AI wrapper. It is a purpose-built tool that understands how these systems actually behave in production, because the person who built it has been inside them for years.</p>
-      <p>The name stands for <strong>Data Work Forge</strong>. DataWeave is where we started. Data engineering, pipeline tooling, and platform integrations are where we are going. Everything a modern integration architect needs, in one place.</p>
-      <div class="about-stamp">
-        <span>DWForge</span> Data Work, forged for production.
-      </div>
-    </div>
-  </div>
-</div>
-
-
-<style>
-  .enterprise-section { max-width: 980px; margin: 0 auto; padding: 4.5rem 2rem; }
-  .roi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 3rem; }
-  .roi-card { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; }
-  .roi-card.highlight { background: var(--blue); color: #fff; border-color: var(--blue); }
-  .roi-card.highlight .roi-label { color: rgba(255,255,255,0.7); }
-  .roi-card.highlight .roi-sub { color: rgba(255,255,255,0.8); }
-  .roi-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 0.5rem; }
-  .roi-number { font-size: 2.8rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin-bottom: 0.5rem; color: var(--blue); }
-  .roi-card.highlight .roi-number { color: #fff; }
-  .roi-sub { font-size: 14px; color: var(--text-muted); line-height: 1.6; }
-  .team-features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 2rem; }
-  .team-feature { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--text-muted); line-height: 1.5; }
-  .team-feature-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
-  .contact-box { margin-top: 3rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap; }
-  .contact-box-text h3 { font-size: 18px; font-weight: 700; margin-bottom: 0.4rem; }
-  .contact-box-text p { font-size: 14px; color: var(--text-muted); line-height: 1.6; max-width: 480px; }
-  .contact-btn { background: var(--blue); color: #fff; padding: 11px 24px; border-radius: var(--radius); font-size: 14px; font-weight: 700; white-space: nowrap; font-family: var(--font); display: inline-block; flex-shrink: 0; }
-  .contact-btn:hover { background: var(--blue-dark); color: #fff; }
-  @media (max-width: 700px) {
-    .roi-grid { grid-template-columns: 1fr; }
-    .team-features { grid-template-columns: 1fr; }
-    .contact-box { flex-direction: column; align-items: flex-start; }
-    .roi-number { font-size: 2.2rem; }
-  }
-</style>
-
-<div class="enterprise-section" id="enterprise">
-  <div class="section-eyebrow">For teams and enterprises</div>
-  <div class="section-heading">The ROI conversation is straightforward</div>
-  <p class="section-sub">If your team spends time writing DataWeave by hand, DWForge pays for itself in the first hour of use.</p>
-
-  <div class="roi-grid">
-    <div class="roi-card highlight">
-      <div class="roi-label">Average time saved per transformation</div>
-      <div class="roi-number">2.5 hrs</div>
-      <div class="roi-sub">A transformation that takes a senior developer 3 hours takes DWForge 30 seconds. That time goes back into delivery.</div>
-    </div>
-    <div class="roi-card">
-      <div class="roi-label">Annual saving for a team of 10 developers</div>
-      <div class="roi-number">$200k+</div>
-      <div class="roi-sub">Based on 25% of developer time spent on data transformations at $100/hr fully loaded. Conservative estimate.</div>
-    </div>
-    <div class="roi-card">
-      <div class="roi-label">Junior developers become productive faster</div>
-      <div class="roi-number">Day 1</div>
-      <div class="roi-sub">DWForge guides junior developers through the right questions. They stop blocking on DataWeave and start shipping.</div>
-    </div>
-    <div class="roi-card">
-      <div class="roi-label">Cost of DWForge for a team of 10</div>
-      <div class="roi-number">$79/mo</div>
-      <div class="roi-sub">That is $7.90 per developer per month. The ROI on a single complex transformation covers the annual cost.</div>
-    </div>
-  </div>
-
-  <div style="margin-top:2.5rem">
-    <div class="section-eyebrow" style="margin-bottom:0.75rem">What teams get</div>
-    <div class="team-features">
-      <div class="team-feature"><span class="team-feature-dot"></span>Unlimited DataWeave generations across the whole team</div>
-      <div class="team-feature"><span class="team-feature-dot"></span>All three modes: paste samples, describe, or chat</div>
-      <div class="team-feature"><span class="team-feature-dot"></span>Works with every major enterprise system your team uses</div>
-      <div class="team-feature"><span class="team-feature-dot"></span>No payload storage. Enterprise data stays private.</div>
-      <div class="team-feature"><span class="team-feature-dot"></span>Junior developers guided to correct output every time</div>
-      <div class="team-feature"><span class="team-feature-dot"></span>Code explained in plain English so the team learns as they go</div>
-      <div class="team-feature"><span class="team-feature-dot"></span>MUnit test generation coming soon</div>
-      <div class="team-feature"><span class="team-feature-dot"></span>Custom enterprise onboarding available on request</div>
-    </div>
-  </div>
-
-  <div class="contact-box">
-    <div class="contact-box-text">
-      <h3>Want to roll DWForge out across your team?</h3>
-      <p>We work directly with integration teams and architecture leads to get DWForge set up properly. No sales process, no lengthy procurement. Just a conversation about what your team needs.</p>
-    </div>
-    <a href="mailto:hello@dwforge.ai" class="contact-btn">Get in touch</a>
-  </div>
-</div>
-
-<div class="cta-section">
-  <h2>Write your first DataWeave now</h2>
-  <p>Free during beta. No signup. No credit card. Just paste your payload and go.</p>
-  <a href="tool.html" class="btn-white">Write my DataWeave</a>
-  <div class="cta-note">Your payloads are not stored. We do not log your data.</div>
+<div class="cta-strip">
+  <h2>Skip the manual mapping</h2>
+  <p>Paste your source and target payload. DWForge writes the DataWeave for you.</p>
+  <a href="../tool.html" class="btn-white">Write my DataWeave</a>
+  <div class="cta-note">Free during beta. No signup. No credit card.</div>
 </div>
 
 <footer>
   <span>© 2026 DWForge. Built by an integration architect.</span>
   <div class="footer-links">
-    <a href="tool.html">Tool</a>
-    <a href="pricing.html">Pricing</a>
-    <a href="#about">About</a>
+    <a href="../tool.html">Tool</a>
+    <a href="../pricing.html">Pricing</a>
+    <a href="../index.html#about">About</a>
     <a href="mailto:hello@dwforge.ai">Contact</a>
   </div>
 </footer>
 <div style="background:var(--bg-secondary);border-top:1px solid var(--border);padding:1rem 2rem;font-size:12px;color:var(--text-muted);line-height:1.7;text-align:center">
-  All product names, logos, and trademarks are the property of their respective owners. DWForge is not affiliated with, endorsed by, or officially connected to Salesforce, SAP, Microsoft, Oracle, Workday, NetSuite, Dremio, or any other platform listed on this site. User payloads submitted to DWForge are used solely to generate DataWeave in that session. We do not store, log, or retain any payload data.
+  All product names, logos, and trademarks are the property of their respective owners. DWForge is not affiliated with, endorsed by, or officially connected to Salesforce, SAP, Microsoft, Oracle, Workday, NetSuite, or any other platform listed on this site.
 </div>
 
 </body>
