@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — DWForge AI</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #185FA5; --blue-light: #E6F1FB; --blue-dark: #0C447C;
+    --text: #1a1a1a; --text-muted: #6b7280; --border: #e5e7eb;
+    --bg: #ffffff; --bg-secondary: #f9fafb; --radius: 10px;
+    --green: #16a34a; --green-light: #f0fdf4;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); background: var(--bg); line-height: 1.6; }
+  a { text-decoration: none; color: inherit; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 2rem; border-bottom: 1px solid var(--border); }
+  .nav-logo { display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 700; }
+  .nav-logo-icon { width: 28px; height: 28px; background: var(--blue); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+  .nav-logo-icon svg { width: 14px; height: 14px; fill: #fff; }
+  .dw { color: var(--blue); }
+  .nav-links { display: flex; gap: 1.5rem; font-size: 14px; color: var(--text-muted); }
+  .nav-links a:hover { color: var(--text); }
+
+  .page { max-width: 680px; margin: 0 auto; padding: 5rem 2rem; text-align: center; }
+  .beta-pill { display: inline-flex; align-items: center; gap: 6px; background: var(--green-light); color: var(--green); font-size: 13px; font-weight: 600; padding: 6px 16px; border-radius: 20px; margin-bottom: 1.5rem; }
+  .page h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 1rem; }
+  .page .sub { font-size: 1rem; color: var(--text-muted); max-width: 480px; margin: 0 auto 3rem; line-height: 1.7; }
+
+  .free-card { border: 2px solid var(--blue); border-radius: 14px; padding: 2.5rem 2rem; background: var(--blue-light); margin-bottom: 2rem; }
+  .price { font-size: 4.5rem; font-weight: 800; color: var(--blue); letter-spacing: -0.04em; line-height: 1; margin-bottom: 0.4rem; }
+  .price-note { font-size: 14px; color: var(--blue-dark); margin-bottom: 1.75rem; font-weight: 500; }
+  .free-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 2rem; text-align: left; max-width: 300px; margin-left: auto; margin-right: auto; }
+  .free-features li { font-size: 14px; display: flex; align-items: center; gap: 8px; color: var(--blue-dark); font-weight: 500; }
+  .free-features li::before { content: "✓"; font-weight: 800; color: var(--blue); }
+  .btn-blue { display: inline-flex; align-items: center; gap: 8px; background: var(--blue); color: #fff; padding: 13px 32px; border-radius: var(--radius); font-size: 15px; font-weight: 600; transition: background 0.15s; }
+  .btn-blue:hover { background: var(--blue-dark); color: #fff; }
+
+  .waitlist { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 2rem; margin-bottom: 2.5rem; }
+  .waitlist h2 { font-size: 17px; font-weight: 700; margin-bottom: 0.5rem; }
+  .waitlist p { font-size: 14px; color: var(--text-muted); margin-bottom: 1.25rem; line-height: 1.6; }
+  .wl-form { display: flex; gap: 8px; max-width: 400px; margin: 0 auto; }
+  .wl-form input { flex: 1; padding: 9px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text); }
+  .wl-form input:focus { outline: none; border-color: var(--blue); }
+  .wl-form button { padding: 9px 18px; background: var(--blue); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .wl-form button:hover { background: var(--blue-dark); }
+  .wl-ok { display: none; font-size: 14px; color: var(--green); font-weight: 600; margin-top: 12px; }
+
+  .roadmap { text-align: left; margin-bottom: 2.5rem; }
+  .roadmap h2 { font-size: 17px; font-weight: 700; margin-bottom: 1.25rem; text-align: center; }
+  .rm-list { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .rm-item { display: flex; align-items: flex-start; gap: 12px; padding: 1rem 1.25rem; background: #fff; border-bottom: 1px solid var(--border); }
+  .rm-item:last-child { border-bottom: none; }
+  .badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; margin-top: 3px; flex-shrink: 0; }
+  .live { background: var(--green-light); color: var(--green); }
+  .soon { background: var(--blue-light); color: var(--blue); }
+  .planned { background: var(--bg-secondary); color: var(--text-muted); border: 1px solid var(--border); }
+  .rm-text h3 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .rm-text p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+  .faq { text-align: left; margin-bottom: 2.5rem; }
+  .faq h2 { font-size: 17px; font-weight: 700; margin-bottom: 1.25rem; text-align: center; }
+  .faq-list { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .faq-item { background: #fff; border-bottom: 1px solid var(--border); }
+  .faq-item:last-child { border-bottom: none; }
+  .faq-q { padding: 1rem 1.25rem; font-size: 14px; font-weight: 500; cursor: pointer; display: flex; justify-content: space-between; gap: 1rem; user-select: none; }
+  .faq-q:hover { color: var(--blue); }
+  .faq-a { padding: 0 1.25rem 1rem; font-size: 14px; color: var(--text-muted); line-height: 1.7; display: none; }
+  .faq-item.open .faq-a { display: block; }
+  .faq-item.open .faq-q { color: var(--blue); }
+
+  footer { padding: 2rem; text-align: center; font-size: 13px; color: var(--text-muted); border-top: 1px solid var(--border); }
+  footer a { color: var(--text-muted); }
+  footer a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span><span class="dw">DW</span>Forge AI</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="tool.html">Tool</a>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="beta-pill">🎉 Free during beta — no credit card, no catch</div>
+  <h1>Free while we build together</h1>
+  <p class="sub">DWForge is in beta. Everything is free right now — unlimited generations, all features. In return, we ask for your honest feedback so we build what you actually need.</p>
+
+  <div class="free-card">
+    <div class="price">$0</div>
+    <div class="price-note">Free during beta · Unlimited · No credit card ever</div>
+    <ul class="free-features">
+      <li>Unlimited DataWeave generations</li>
+      <li>Paste samples mode</li>
+      <li>Plain English mode</li>
+      <li>Salesforce source context</li>
+      <li>Microsoft D365 F&O target context</li>
+      <li>Deputy shift structure support</li>
+      <li>Null-safe output by default</li>
+      <li>Transformation explanation included</li>
+    </ul>
+    <a href="tool.html" class="btn-blue">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Start generating free
+    </a>
+  </div>
+
+  <div class="waitlist">
+    <h2>Get notified when Pro launches</h2>
+    <p>Pro will bring MUnit test generation, saved transformations, team access, Apex generator, and more. Join now — beta users get <strong>50% off for life</strong>.</p>
+    <div class="wl-form">
+      <input type="email" id="wl-email" placeholder="your@email.com">
+      <button onclick="joinWaitlist()">Join waitlist</button>
+    </div>
+    <div class="wl-ok" id="wl-ok">✓ You're on the list — we'll email you when Pro is ready.</div>
+  </div>
+
+  <div class="roadmap">
+    <h2>What's live and what's coming</h2>
+    <div class="rm-list">
+      <div class="rm-item">
+        <span class="badge live">Live</span>
+        <div class="rm-text">
+          <h3>DataWeave generator — paste samples mode</h3>
+          <p>Paste input + output, get production-ready DataWeave with null handling and enterprise system context.</p>
+        </div>
+      </div>
+      <div class="rm-item">
+        <span class="badge live">Live</span>
+        <div class="rm-text">
+          <h3>DataWeave generator — plain English mode</h3>
+          <p>Describe your transformation in plain English and get working code without touching a payload.</p>
+        </div>
+      </div>
+      <div class="rm-item">
+        <span class="badge soon">Coming soon</span>
+        <div class="rm-text">
+          <h3>MUnit test generation</h3>
+          <p>Auto-generate MUnit test cases for your DataWeave transformations — input variants, edge cases, null paths.</p>
+        </div>
+      </div>
+      <div class="rm-item">
+        <span class="badge soon">Coming soon</span>
+        <div class="rm-text">
+          <h3>Saved transformation library</h3>
+          <p>Save, name, and reuse your best transformations across projects and teams.</p>
+        </div>
+      </div>
+      <div class="rm-item">
+        <span class="badge planned">Planned</span>
+        <div class="rm-text">
+          <h3>Salesforce Apex generator</h3>
+          <p>Production-safe Apex with governor limit awareness, bulkification, trigger frameworks, and async patterns.</p>
+        </div>
+      </div>
+      <div class="rm-item">
+        <span class="badge planned">Planned</span>
+        <div class="rm-text">
+          <h3>Integration pattern library</h3>
+          <p>Reusable Mule flow templates for common enterprise patterns — error handling, retry, dead letter, and more.</p>
+        </div>
+      </div>
+      <div class="rm-item">
+        <span class="badge planned">Planned</span>
+        <div class="rm-text">
+          <h3>D365 F&O OData scaffolder</h3>
+          <p>Generate D365 OData query structures and payload schemas from entity descriptions.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="faq">
+    <h2>Questions</h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">How long will it stay free? <span>+</span></div>
+        <div class="faq-a">Through beta — at minimum several months. We'll give the waitlist at least 30 days notice before introducing paid plans, and beta users always get a significant lifetime discount.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Will the generated DataWeave actually compile and run? <span>+</span></div>
+        <div class="faq-a">Yes — every output is designed to be production-safe with proper DataWeave 2.0 syntax, null handling, and Mule event context awareness. Always review before deploying, but most outputs work directly in Anypoint Studio without changes.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Is my payload data stored anywhere? <span>+</span></div>
+        <div class="faq-a">No. Payloads you submit are used only to generate your DataWeave in that session and are not stored, logged, or used for any other purpose.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What enterprise systems do you support? <span>+</span></div>
+        <div class="faq-a">Currently: Salesforce (custom objects, platform events, __c/__r patterns), Microsoft D365 F&O (OData payloads, legal entity mapping), Deputy (Unix timestamps, shift structures), and generic JSON/XML/CSV. More being added — tell us what you need.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">I have feedback — how do I share it? <span>+</span></div>
+        <div class="faq-a">We genuinely want your feedback — good and bad. Join the waitlist and reply to our email, or reach out directly. Early feedback shapes what we build next.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 DWForge AI · <a href="index.html">Home</a> · <a href="tool.html">Tool</a> · Built by integration architects, for integration architects</p>
+</footer>
+
+<script>
+function joinWaitlist() {
+  const email = document.getElementById('wl-email').value.trim();
+  if (!email || !email.includes('@')) { alert('Please enter a valid email.'); return; }
+  document.getElementById('wl-ok').style.display = 'block';
+  document.getElementById('wl-email').value = '';
+}
+function toggleFaq(el) {
+  const item = el.parentElement;
+  const open = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => { i.classList.remove('open'); i.querySelector('.faq-q span').textContent = '+'; });
+  if (!open) { item.classList.add('open'); el.querySelector('span').textContent = '−'; }
+}
+</script>
+</body>
+</html>
