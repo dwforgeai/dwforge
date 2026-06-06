@@ -88,6 +88,10 @@
   <div class="article-tag">DataWeave Guide</div>
   <h1 class="article-title">Salesforce to SAP DataWeave Transformation: Complete Production Guide</h1>
   <p class="article-subtitle">Real field mapping, null handling, date conversion, and working DataWeave code for Salesforce to SAP S/4HANA integration via MuleSoft. No theory. Just patterns that work in production.</p>
+  <div class="callout info" style="margin-bottom:1.5rem;margin-top:0">
+    <div class="callout-title">Don't want to write this yourself?</div>
+    <a href="../tool.html" style="color:var(--blue);font-weight:700">DWForge</a> generates every transformation in this article automatically. Paste your Salesforce payload, pick SAP S/4HANA as your target, and get production-ready DataWeave in seconds. Free. No signup. <a href="../tool.html" style="color:var(--blue);font-weight:700">Try it now.</a>
+  </div>
   <div class="article-info">
     <span>By DWForge</span>
     <span>June 2026</span>
@@ -335,7 +339,7 @@ output application/json
 }</code></pre>
   <div class="callout warning">
     <div class="callout-title">Do not use this in production</div>
-    This will fail the moment any field is null. In real Salesforce data that happens constantly. The next sections add what you need to make it production safe.
+    This will fail the moment any field is null. In real Salesforce data that happens constantly. The next sections add what you need to make it production safe. Or skip the manual work entirely and let <a href="../tool.html" style="color:var(--orange);font-weight:700">DWForge generate it</a> with all null handling already applied.
   </div>
 
   <div class="callout info">
@@ -422,6 +426,7 @@ validOrders map (order) -> {
 
   <h2 id="complete">10. Complete production DataWeave</h2>
   <p>Everything combined. Single record, all null rules applied, date conversion, relationship field handling, and the skip pattern for missing customer IDs. Copy this into Anypoint Studio and it runs.</p>
+  <p>This is exactly what <a href="../tool.html" style="color:var(--blue);font-weight:700">DWForge</a> generates for you automatically when you describe a Salesforce to SAP transformation. You do not have to write any of this by hand.</p>
   <pre><code>%dw 2.0
 output application/json
 ---
@@ -462,13 +467,13 @@ else {}</code></pre>
 }</code></pre>
 
   <div class="callout success">
-    <div class="callout-title">Skip writing this manually</div>
-    DWForge generates this transformation automatically. Paste your Salesforce payload and expected SAP output, select your systems, and get production-ready DataWeave in seconds. Null handling and date conversion included. No cleanup needed.
+    <div class="callout-title">DWForge generates all of this for you</div>
+    Every pattern in this article is built into DWForge. Paste your Salesforce payload, describe your fields, or just chat with it. You get the complete production DataWeave in seconds including null handling, date conversion, relationship fields, and the skip logic. No manual work. No debugging. <a href="../tool.html" style="color:var(--green);font-weight:700">Try it free at dwforge.vercel.app</a>
   </div>
 
   <div class="cta-box">
-    <h3>Stop writing this by hand</h3>
-    <p>Paste your payload, describe your fields in plain English, or just chat with it. You get working DataWeave in seconds. No cleanup needed.</p>
+    <h3>Generate this DataWeave now</h3>
+    <p>Paste your Salesforce payload and pick SAP S/4HANA as target. DWForge writes the complete transformation including everything covered in this article. Free. No signup.</p>
     <a href="../tool.html">Write my DataWeave free</a>
   </div>
 
