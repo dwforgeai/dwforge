@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Salesforce to SAP DataWeave Transformation — Complete Guide | DWForge</title>
+<title>Salesforce to SAP DataWeave Transformation: Complete Guide | DWForge</title>
 <meta name="description" content="Complete guide to transforming Salesforce payloads to SAP S/4HANA using DataWeave 2.0. Real field mapping, null handling, date conversion, and production-ready code examples.">
 <meta name="keywords" content="DataWeave Salesforce SAP transformation, MuleSoft DataWeave SAP, Salesforce SAP integration DataWeave, DataWeave field mapping">
 <style>
@@ -18,7 +19,7 @@
     --font: 'Calibri', 'Segoe UI', Arial, sans-serif;
     --font-mono: 'Courier New', Courier, monospace;
   }
-  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.7; font-size: 16px; }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.65; font-size: 16px; }
   a { color: var(--blue); text-decoration: none; }
   a:hover { text-decoration: underline; }
   nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: #fff; position: sticky; top: 0; z-index: 100; }
@@ -85,8 +86,8 @@
 
 <div class="article-wrap">
   <div class="article-tag">DataWeave Guide</div>
-  <h1 class="article-title">Salesforce to SAP DataWeave Transformation — Complete Production Guide</h1>
-  <p class="article-subtitle">Real field mapping, null handling, date conversion, and working DataWeave code for Salesforce to SAP S/4HANA integration via MuleSoft. No theory — just patterns that work in production.</p>
+  <h1 class="article-title">Salesforce to SAP DataWeave Transformation: Complete Production Guide</h1>
+  <p class="article-subtitle">Real field mapping, null handling, date conversion, and working DataWeave code for Salesforce to SAP S/4HANA integration via MuleSoft. No theory. Just patterns that work in production.</p>
   <div class="article-info">
     <span>By DWForge</span>
     <span>June 2026</span>
@@ -102,7 +103,7 @@
       <li><a href="#sap">What SAP S/4HANA expects</a></li>
       <li><a href="#field-mapping">Field mapping reference</a></li>
       <li><a href="#basic">Basic DataWeave transformation</a></li>
-      <li><a href="#null-handling">Null handling — the production patterns</a></li>
+      <li><a href="#null-handling">Null handling: the production patterns</a></li>
       <li><a href="#dates">Date conversion for SAP</a></li>
       <li><a href="#relationships">Salesforce relationship fields</a></li>
       <li><a href="#batch">Batch transformation</a></li>
@@ -112,7 +113,7 @@
   </div>
 
   <h2 id="overview">1. Integration overview and architecture</h2>
-  <p>Salesforce to SAP S/4HANA is one of the most common enterprise integration patterns. Salesforce manages the customer-facing side — orders, accounts, service agreements. SAP owns the back office — finance, procurement, inventory, GL posting. MuleSoft sits in the middle, and DataWeave handles the translation between two very different data models.</p>
+  <p>Salesforce to SAP S/4HANA is one of the most common enterprise integration patterns. Salesforce manages the customer-facing side: orders, accounts, service agreements. SAP owns the back office: finance, procurement, inventory, GL posting. MuleSoft sits in the middle and DataWeave handles the translation between two very different data models.</p>
 
   <div class="diagram-wrap">
     <div class="diagram-title">Integration Architecture — Salesforce to SAP via MuleSoft</div>
@@ -173,7 +174,7 @@
   </div>
 
   <h2 id="payload">2. Understanding the Salesforce payload structure</h2>
-  <p>When MuleSoft queries Salesforce for an Order record, the payload arrives as JSON. Custom fields use the <code>__c</code> suffix. Relationship fields use <code>__r</code> notation and contain nested objects.</p>
+  <p>When MuleSoft queries Salesforce for an Order record the payload arrives as JSON. Custom fields use the <code>__c</code> suffix. Relationship fields use <code>__r</code> notation and contain nested objects. Both can be null in real data.</p>
   <pre><code>{
   "Id": "8014W000002XnzQQAS",
   "Name": "ORD-2024-00123",
@@ -201,7 +202,7 @@
   </div>
 
   <h2 id="sap">3. What SAP S/4HANA expects</h2>
-  <p>SAP S/4HANA OData API expects a specific JSON structure for Sales Order creation. Field names are PascalCase, dates must be in ISO 8601 format with time component, and certain fields are mandatory.</p>
+  <p>SAP S/4HANA OData API expects a specific JSON structure for Sales Order creation. Field names are PascalCase. Dates must be in ISO 8601 format with a time component. Certain fields are mandatory with no exceptions.</p>
   <pre><code>{
   "SalesOrderType": "ZOR",
   "SalesOrganization": "AU01",
@@ -223,7 +224,7 @@
 }</code></pre>
 
   <h2 id="field-mapping">4. Field mapping reference</h2>
-  <p>Every field mapped, with its type, null rule, and transformation required.</p>
+  <p>Every field mapped. Type, null rule, and transformation required. This is the reference you need before writing a single line of DataWeave.</p>
 
   <div class="diagram-wrap">
     <div class="diagram-title">Field Mapping — Salesforce to SAP S/4HANA</div>
@@ -311,7 +312,7 @@
   </table>
 
   <h2 id="basic">5. Basic DataWeave transformation</h2>
-  <p>Starting simple — a direct field mapping with no null handling. This is the starting point before adding production safeguards.</p>
+  <p>Starting simple. Direct field mapping with no null handling. This gets you to a working structure before we add the production safeguards in the next sections.</p>
   <pre><code>%dw 2.0
 output application/json
 ---
@@ -334,29 +335,34 @@ output application/json
 }</code></pre>
   <div class="callout warning">
     <div class="callout-title">Do not use this in production</div>
-    This will fail the moment any field is null. The next sections add the null handling that makes this production safe.
+    This will fail the moment any field is null. In real Salesforce data that happens constantly. The next sections add what you need to make it production safe.
   </div>
 
-  <h2 id="null-handling">6. Null handling — the production patterns</h2>
-  <p>SAP is unforgiving with nulls. DataWeave gives you three null handling patterns depending on the business rule.</p>
-  <h3>Pattern 1 — Default value</h3>
+  <div class="callout info">
+    <div class="callout-title">Rather not write this manually?</div>
+    <a href="../tool.html" style="color:var(--blue);font-weight:700">DWForge</a> generates this transformation for you. Paste your Salesforce payload and expected SAP output and get production-ready DataWeave in seconds. Null handling, date conversion, and relationship fields all handled automatically.
+  </div>
+
+  <h2 id="null-handling">6. Null handling. The production patterns.</h2>
+  <p>SAP is unforgiving with nulls. A null in a mandatory field gives you a SOAP fault at 2am. DataWeave gives you three patterns to handle this depending on the business rule.</p>
+  <h3>Pattern 1. Default value</h3>
   <pre><code>TransactionCurrency: payload.Currency__c default "AUD"
 NetAmount: (payload.TotalAmount default 0) as String</code></pre>
-  <h3>Pattern 2 — Skip the whole record</h3>
+  <h3>Pattern 2. Skip the whole record</h3>
   <pre><code>%dw 2.0
 output application/json
 ---
 if (payload.Account__r.SAP_Customer_ID__c != null)
   { SoldToParty: payload.Account__r.SAP_Customer_ID__c }
 else {}</code></pre>
-  <h3>Pattern 3 — Conditional field inclusion</h3>
+  <h3>Pattern 3. Conditional field inclusion</h3>
   <pre><code>(EndDate: payload.EndDate) if (payload.EndDate != null)</code></pre>
 
   <h2 id="dates">7. Date conversion for SAP</h2>
-  <p>SAP OData expects dates in ISO 8601 format with time component. Salesforce Date fields come through as plain date strings.</p>
+  <p>SAP OData expects dates in ISO 8601 format with a time component. Salesforce Date fields come through as plain date strings. You need to convert them. Here is the right way to do it.</p>
   <div class="callout warning">
     <div class="callout-title">The most common DataWeave date mistake</div>
-    Concatenating directly onto a Date type field without casting to String first causes a runtime type error.
+    Concatenating directly onto a Date type field without casting to String first will throw a runtime type error. It compiles fine in Studio. It fails at runtime with real data. Cast to String first, always.
   </div>
   <pre><code>// WRONG — causes runtime type error
 RequestedDeliveryDate: payload.EffectiveDate ++ "T00:00:00"
@@ -366,8 +372,13 @@ RequestedDeliveryDate: if (payload.EffectiveDate != null)
   (payload.EffectiveDate as String) ++ "T00:00:00"
 else null</code></pre>
 
+  <div class="callout info">
+    <div class="callout-title">DWForge handles this automatically</div>
+    Every DataWeave generated by <a href="../tool.html" style="color:var(--blue);font-weight:700">DWForge</a> applies the correct date casting pattern automatically. You never have to remember this rule. It is built into every output by default.
+  </div>
+
   <h2 id="relationships">8. Salesforce relationship fields</h2>
-  <p>Salesforce relationship fields use the <code>__r</code> notation and return nested objects. The entire relationship object can be null if the lookup field is empty.</p>
+  <p>Salesforce relationship fields use the <code>__r</code> notation and return nested objects. The entire relationship object can be null if the lookup field is empty. This catches a lot of developers out the first time they hit it in production.</p>
   <pre><code>// Safe navigation through relationship
 SoldToParty: payload.Account__r.SAP_Customer_ID__c default ""
 
@@ -378,7 +389,7 @@ SoldToParty: if (payload.Account__r != null and
 else null</code></pre>
 
   <h2 id="batch">9. Batch transformation</h2>
-  <p>When processing multiple Salesforce records in one flow, the payload arrives as an array. Always filter before map — never chain them directly.</p>
+  <p>When processing multiple Salesforce records in one flow the payload arrives as an array. The structure changes so the DataWeave changes too. And always filter before map. Never chain them directly or you will hit a runtime error.</p>
   <pre><code>%dw 2.0
 output application/json
 var validOrders = payload filter (item) ->
@@ -404,8 +415,13 @@ validOrders map (order) -> {
   }
 }</code></pre>
 
+  <div class="callout success">
+    <div class="callout-title">Writing batch transformations manually takes hours</div>
+    <a href="../tool.html" style="color:var(--green);font-weight:700">DWForge</a> generates batch DataWeave in seconds. Tell it your source fields, target fields, and null rules and it writes the filter, the map, and every default correctly. Free to try at dwforge.vercel.app
+  </div>
+
   <h2 id="complete">10. Complete production DataWeave</h2>
-  <p>Everything combined — single record, all null rules, date conversion, relationship fields, and the skip pattern for missing customer IDs.</p>
+  <p>Everything combined. Single record, all null rules applied, date conversion, relationship field handling, and the skip pattern for missing customer IDs. Copy this into Anypoint Studio and it runs.</p>
   <pre><code>%dw 2.0
 output application/json
 ---
@@ -433,7 +449,7 @@ if (payload.Account__r.SAP_Customer_ID__c != null)
 else {}</code></pre>
 
   <h2 id="testing">11. Testing in the DataWeave Playground</h2>
-  <p>Validate this at <a href="https://dataweave.mulesoft.com/learn/dataweave" target="_blank">dataweave.mulesoft.com</a> before deploying to Anypoint Studio. Use this test payload:</p>
+  <p>Before you paste this into Anypoint Studio, validate it at <a href="https://dataweave.mulesoft.com/learn/dataweave" target="_blank">dataweave.mulesoft.com</a>. Use this test payload in the left panel:</p>
   <pre><code>{
   "Name": "ORD-2024-00123",
   "EffectiveDate": "2024-06-01",
@@ -447,12 +463,12 @@ else {}</code></pre>
 
   <div class="callout success">
     <div class="callout-title">Skip writing this manually</div>
-    DWForge generates this transformation automatically. Paste your Salesforce payload and expected SAP output, select your systems, and get production-ready DataWeave in seconds — null handling and date conversion included.
+    DWForge generates this transformation automatically. Paste your Salesforce payload and expected SAP output, select your systems, and get production-ready DataWeave in seconds. Null handling and date conversion included. No cleanup needed.
   </div>
 
   <div class="cta-box">
     <h3>Stop writing this by hand</h3>
-    <p>DWForge generates Salesforce to SAP DataWeave in seconds. Paste your payload, describe your fields, or chat with it directly.</p>
+    <p>Paste your payload, describe your fields in plain English, or just chat with it. You get working DataWeave in seconds. No cleanup needed.</p>
     <a href="../tool.html">Write my DataWeave free</a>
   </div>
 
