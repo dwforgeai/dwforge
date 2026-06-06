@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DataWeave Generator — DWForge</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #185FA5; --blue-light: #E6F1FB; --blue-dark: #0C447C;
+    --text: #1a1a1a; --text-muted: #6b7280; --border: #e5e7eb;
+    --bg: #ffffff; --bg-secondary: #f9fafb; --radius: 10px;
+    --green: #16a34a; --green-light: #f0fdf4;
+    --red: #dc2626; --red-light: #fef2f2;
+    --font: 'Calibri', 'Segoe UI', Arial, sans-serif;
+  }
+  body { font-family: var(--font); color: var(--text); background: var(--bg-secondary); min-height: 100vh; -webkit-text-size-adjust: 100%; }
+  a { text-decoration: none; color: inherit; }
+  input, textarea, select, button { font-family: var(--font); -webkit-appearance: none; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.25rem; border-bottom: 1px solid var(--border); background: #fff; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 700; }
+  .nav-logo-icon { width: 28px; height: 28px; background: var(--blue); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .nav-logo-icon svg { width: 14px; height: 14px; fill: #fff; }
+  .dw { color: var(--blue); }
+  .beta { font-size: 10px; background: var(--green-light); color: var(--green); padding: 2px 7px; border-radius: 20px; font-weight: 700; }
+  .nav-right { display: flex; align-items: center; gap: 8px; }
+  .nav-right a { color: var(--text-muted); font-size: 13px; }
+  .upgrade { background: var(--blue); color: #fff !important; padding: 6px 12px; border-radius: 7px; font-weight: 600; font-size: 12px; }
+
+  .layout { max-width: 860px; margin: 0 auto; padding: 1.25rem 1rem; }
+  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 3px; }
+  .page-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 1.25rem; }
+
+  .welcome-tip { background: var(--blue-light); border: 1px solid #B5D4F4; border-radius: var(--radius); padding: 10px 14px; font-size: 14px; color: #1e3a5f; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 10px; line-height: 1.5; }
+  .tip-close { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 0 4px; flex-shrink: 0; }
+
+  .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-secondary); overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; flex-shrink: 0; font-family: var(--font); }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); background: #fff; }
+
+  .panel { display: none; padding: 1.25rem; }
+  .panel.active { display: block; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  textarea { width: 100%; min-height: 120px; font-family: 'Courier New', monospace; font-size: 12px; resize: vertical; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text); line-height: 1.6; }
+  textarea:focus { outline: none; border-color: var(--blue); background: #fff; }
+  textarea.plain { font-family: var(--font); font-size: 14px; min-height: 100px; }
+  select { width: 100%; padding: 9px 10px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text); font-family: var(--font); }
+  select:focus { outline: none; border-color: var(--blue); }
+
+  .gen-btn { width: 100%; padding: 12px; font-size: 15px; font-weight: 700; background: var(--blue); color: #fff; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; font-family: var(--font); touch-action: manipulation; }
+  .gen-btn:active { background: var(--blue-dark); }
+  .gen-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .progress-wrap { display: none; margin-top: 1rem; padding: 14px 16px; background: var(--blue-light); border: 1px solid #B5D4F4; border-radius: 8px; }
+  .progress-wrap.visible { display: block; }
+  .progress-bar-track { height: 4px; background: #B5D4F4; border-radius: 4px; margin-bottom: 10px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--blue); border-radius: 4px; width: 0%; transition: width 0.5s ease; }
+  .progress-msg { font-size: 14px; color: #1e3a5f; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .progress-spinner { width: 14px; height: 14px; border: 2px solid #B5D4F4; border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-box { margin-top: 1rem; padding: 10px 14px; background: var(--red-light); border: 1px solid #fca5a5; border-radius: 8px; font-size: 14px; color: var(--red); display: none; }
+  .error-box.visible { display: block; }
+
+  .output-wrap { margin-top: 1.25rem; display: none; }
+  .output-wrap.visible { display: block; }
+  .output-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .output-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+  .output-head-left { display: flex; align-items: center; gap: 8px; }
+  .output-label { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+  .success-badge { font-size: 11px; background: var(--green-light); color: var(--green); padding: 2px 9px; border-radius: 20px; font-weight: 700; display: none; }
+  .success-badge.visible { display: inline-block; }
+  .copy-btn { padding: 6px 14px; font-size: 13px; font-weight: 600; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--text-muted); cursor: pointer; font-family: var(--font); }
+  .copy-btn.copied { color: var(--green); border-color: #86efac; background: var(--green-light); }
+  .code-out { padding: 14px; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.7; color: var(--text); white-space: pre-wrap; word-break: break-word; max-height: 380px; overflow-y: auto; }
+  .expl-box { padding: 12px 14px; font-size: 14px; color: #1e3a5f; line-height: 1.7; background: var(--blue-light); border-top: 1px solid #B5D4F4; display: none; }
+  .expl-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--blue); display: block; margin-bottom: 4px; }
+
+  .chat-wrap { display: flex; flex-direction: column; }
+  .chat-messages { min-height: 320px; max-height: 440px; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 10px; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 10px; scroll-behavior: smooth; }
+  .msg { display: flex; gap: 8px; align-items: flex-start; }
+  .msg.ai { align-self: flex-start; max-width: 92%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; max-width: 85%; }
+  .msg-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+  .ai .msg-avatar { background: #1e293b; color: #e2e8f0; }
+  .user .msg-avatar { background: var(--blue-light); color: var(--blue); }
+  .msg-bubble { padding: 10px 13px; border-radius: 12px; font-size: 14px; line-height: 1.6; font-family: var(--font); }
+  .ai .msg-bubble { background: #fff; border: 1px solid var(--border); color: var(--text); border-top-left-radius: 4px; }
+  .user .msg-bubble { background: var(--blue); color: #fff; border-top-right-radius: 4px; }
+  .msg-bubble.code-bubble { font-family: 'Courier New', monospace; font-size: 11px; white-space: pre-wrap; background: #1e293b; color: #e2e8f0; border: none; max-height: 280px; overflow-y: auto; border-radius: 8px; line-height: 1.6; }
+  .quick-replies { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .quick-reply { padding: 6px 12px; font-size: 13px; font-weight: 600; background: var(--blue-light); color: var(--blue); border: 1px solid #B5D4F4; border-radius: 20px; cursor: pointer; font-family: var(--font); touch-action: manipulation; }
+  .quick-reply:active { background: var(--blue); color: #fff; }
+  .typing-indicator { display: flex; gap: 4px; padding: 10px 13px; background: #fff; border: 1px solid var(--border); border-radius: 12px; border-top-left-radius: 4px; width: fit-content; }
+  .typing-dot { width: 6px; height: 6px; background: var(--text-muted); border-radius: 50%; animation: bounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input { flex: 1; padding: 10px 12px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text); resize: none; min-height: 44px; max-height: 100px; line-height: 1.5; font-family: var(--font); }
+  .chat-input:focus { outline: none; border-color: var(--blue); }
+  .chat-send { padding: 10px 16px; background: var(--blue); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font); touch-action: manipulation; }
+  .chat-send:active { background: var(--blue-dark); }
+  .chat-send:disabled { opacity: 0.5; }
+  .chat-actions { display: none; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .chat-actions.visible { display: flex; }
+  .chat-action-btn { padding: 8px 16px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; font-family: var(--font); touch-action: manipulation; }
+  .btn-copy { background: var(--blue); color: #fff; border: none; }
+  .btn-reset { background: #fff; color: var(--text); border: 1px solid var(--border); }
+
+  .tips-card { margin-top: 1.25rem; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; }
+  .tips-card h3 { font-size: 13px; font-weight: 700; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .tips-list { display: flex; flex-direction: column; gap: 7px; list-style: none; }
+  .tips-list li { font-size: 14px; color: var(--text-muted); display: flex; gap: 8px; line-height: 1.5; }
+  .tips-list li::before { content: "->"; color: var(--blue); flex-shrink: 0; font-weight: 700; }
+
+  .privacy-note { margin-top: 1rem; text-align: center; font-size: 12px; color: var(--text-muted); }
+
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .layout { padding: 1rem 0.75rem; }
+    .page-title { font-size: 18px; }
+    .tab { font-size: 12px; padding: 9px 12px; }
+    .chat-messages { min-height: 260px; max-height: 360px; }
+    .msg.ai, .msg.user { max-width: 95%; }
+    .chat-input { font-size: 16px; }
+    .msg-bubble { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span><span class="dw">DW</span>Forge</span>
+    <span class="beta">Free Beta</span>
+  </a>
+  <div class="nav-right">
+    <a href="pricing.html" class="upgrade">Get Pro alerts</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <div class="page-title">DataWeave Generator</div>
+  <div class="page-sub">Paste your payload, describe what you need, or chat with DWForge. You get working DataWeave in seconds.</div>
+
+  <div class="welcome-tip" id="welcome-tip">
+    <span>First time here? Try the <strong>Chat</strong> tab. Answer a few questions and DWForge writes the DataWeave for you. No payload needed.</span>
+    <button class="tip-close" onclick="closeTip()">x</button>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('samples', this)">Paste samples</button>
+      <button class="tab" onclick="switchTab('describe', this)">Describe</button>
+      <button class="tab" onclick="switchTab('chat', this)">Chat with DWForge</button>
+    </div>
+
+    <!-- PASTE SAMPLES -->
+    <div id="panel-samples" class="panel active">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Input payload (JSON / XML / CSV)</label>
+          <textarea id="inp" placeholder='{"Id": "001XX000003GYnj", "Name": "ORD-2024-00123", "Status__c": "Active", "Account__r": {"ERP_ID__c": "ACC-1001", "Name": "Global Retail Ltd"}, "Entity__c": "US01", "StartDate__c": "2024-06-01", "Amount__c": null}'></textarea>
+        </div>
+        <div class="form-group">
+          <label>Expected output</label>
+          <textarea id="out" placeholder='{"OrderNumber": "ORD-2024-00123", "CustomerAccount": "ACC-1001", "OrderStatus": "Active", "CompanyId": "US01", "StartDate": "2024-06-01T00:00:00Z", "TotalAmount": 0}'></textarea>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Special instructions</label>
+        <textarea class="plain" id="notes" style="min-height:70px" placeholder="e.g. Single record. Skip if CustomerAccount is null. Default null Amount to 0. Convert date to ISO 8601 UTC."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Source system</label>
+          <select id="src">
+            <optgroup label="CRM">
+              <option>Salesforce</option>
+              <option>Microsoft Dynamics 365 CRM</option>
+              <option>HubSpot</option>
+              <option>Zoho CRM</option>
+              <option>ServiceNow</option>
+            </optgroup>
+            <optgroup label="ERP">
+              <option>Microsoft D365 F&O</option>
+              <option>SAP S/4HANA</option>
+              <option>SAP ECC</option>
+              <option>Oracle ERP Cloud</option>
+              <option>Oracle E-Business Suite</option>
+              <option>NetSuite</option>
+              <option>Infor</option>
+              <option>Epicor</option>
+            </optgroup>
+            <optgroup label="HR / Payroll">
+              <option>Workday</option>
+              <option>ADP</option>
+              <option>BambooHR</option>
+              <option>Deputy</option>
+              <option>UKG (Kronos)</option>
+              <option>SuccessFactors</option>
+            </optgroup>
+            <optgroup label="Finance / Banking">
+              <option>Xero</option>
+              <option>QuickBooks</option>
+              <option>Sage</option>
+              <option>MYOB</option>
+              <option>Temenos</option>
+            </optgroup>
+            <optgroup label="E-commerce / Retail">
+              <option>Shopify</option>
+              <option>Magento</option>
+              <option>WooCommerce</option>
+              <option>BigCommerce</option>
+            </optgroup>
+            <optgroup label="Logistics / Supply Chain">
+              <option>Manhattan Associates</option>
+              <option>JDA / Blue Yonder</option>
+              <option>Oracle SCM</option>
+              <option>SAP SCM</option>
+            </optgroup>
+            <optgroup label="Healthcare">
+              <option>Epic (EHR)</option>
+              <option>Cerner</option>
+              <option>HL7 / FHIR</option>
+            </optgroup>
+            <optgroup label="Data / Analytics">
+              <option>Snowflake</option>
+              <option>Databricks</option>
+              <option>Dremio</option>
+              <option>SQL Database</option>
+              <option>REST API / JSON</option>
+              <option>XML / SOAP</option>
+              <option>CSV / Flat File</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option>Generic / Other</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target system</label>
+          <select id="tgt">
+            <optgroup label="ERP">
+              <option>Microsoft D365 F&O</option>
+              <option>SAP S/4HANA</option>
+              <option>SAP ECC</option>
+              <option>Oracle ERP Cloud</option>
+              <option>Oracle E-Business Suite</option>
+              <option>NetSuite</option>
+              <option>Infor</option>
+              <option>Epicor</option>
+            </optgroup>
+            <optgroup label="CRM">
+              <option>Salesforce</option>
+              <option>Microsoft Dynamics 365 CRM</option>
+              <option>HubSpot</option>
+              <option>Zoho CRM</option>
+              <option>ServiceNow</option>
+            </optgroup>
+            <optgroup label="HR / Payroll">
+              <option>Workday</option>
+              <option>ADP</option>
+              <option>BambooHR</option>
+              <option>Deputy</option>
+              <option>UKG (Kronos)</option>
+              <option>SuccessFactors</option>
+            </optgroup>
+            <optgroup label="Finance / Banking">
+              <option>Xero</option>
+              <option>QuickBooks</option>
+              <option>Sage</option>
+              <option>MYOB</option>
+              <option>Temenos</option>
+            </optgroup>
+            <optgroup label="E-commerce / Retail">
+              <option>Shopify</option>
+              <option>Magento</option>
+              <option>WooCommerce</option>
+              <option>BigCommerce</option>
+            </optgroup>
+            <optgroup label="Logistics / Supply Chain">
+              <option>Manhattan Associates</option>
+              <option>JDA / Blue Yonder</option>
+              <option>Oracle SCM</option>
+              <option>SAP SCM</option>
+            </optgroup>
+            <optgroup label="Healthcare">
+              <option>Epic (EHR)</option>
+              <option>Cerner</option>
+              <option>HL7 / FHIR</option>
+            </optgroup>
+            <optgroup label="Data / Analytics">
+              <option>Snowflake</option>
+              <option>Databricks</option>
+              <option>Dremio</option>
+              <option>SQL Database</option>
+              <option>REST API / JSON</option>
+              <option>XML / SOAP</option>
+              <option>CSV / Flat File</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option>Generic / Other</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <button class="gen-btn" id="btn-s" onclick="generate('samples')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Generate DataWeave
+      </button>
+    </div>
+
+    <!-- DESCRIBE -->
+    <div id="panel-describe" class="panel">
+      <div class="form-group">
+        <label>Describe your transformation in plain English</label>
+        <textarea class="plain" id="desc" style="min-height:130px" placeholder="e.g. I have a single Salesforce Order record. Name is the order number, Status__c is the status, Account__r.ERP_ID__c is the ERP account ID (skip record if null), Entity__c is the legal entity, StartDate__c is in YYYY-MM-DD format, Amount__c can be null (default to 0). Transform to D365 F&O with OrderNumber, CustomerAccount, OrderStatus, CompanyId, StartDate in ISO 8601 UTC, TotalAmount."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Source system</label>
+          <select id="src2">
+            <optgroup label="CRM">
+              <option>Salesforce</option>
+              <option>Microsoft Dynamics 365 CRM</option>
+              <option>HubSpot</option>
+              <option>Zoho CRM</option>
+              <option>ServiceNow</option>
+            </optgroup>
+            <optgroup label="ERP">
+              <option>Microsoft D365 F&O</option>
+              <option>SAP S/4HANA</option>
+              <option>SAP ECC</option>
+              <option>Oracle ERP Cloud</option>
+              <option>Oracle E-Business Suite</option>
+              <option>NetSuite</option>
+              <option>Infor</option>
+              <option>Epicor</option>
+            </optgroup>
+            <optgroup label="HR / Payroll">
+              <option>Workday</option>
+              <option>ADP</option>
+              <option>BambooHR</option>
+              <option>Deputy</option>
+              <option>UKG (Kronos)</option>
+              <option>SuccessFactors</option>
+            </optgroup>
+            <optgroup label="Finance / Banking">
+              <option>Xero</option>
+              <option>QuickBooks</option>
+              <option>Sage</option>
+              <option>MYOB</option>
+              <option>Temenos</option>
+            </optgroup>
+            <optgroup label="E-commerce / Retail">
+              <option>Shopify</option>
+              <option>Magento</option>
+              <option>WooCommerce</option>
+              <option>BigCommerce</option>
+            </optgroup>
+            <optgroup label="Logistics / Supply Chain">
+              <option>Manhattan Associates</option>
+              <option>JDA / Blue Yonder</option>
+              <option>Oracle SCM</option>
+              <option>SAP SCM</option>
+            </optgroup>
+            <optgroup label="Healthcare">
+              <option>Epic (EHR)</option>
+              <option>Cerner</option>
+              <option>HL7 / FHIR</option>
+            </optgroup>
+            <optgroup label="Data / Analytics">
+              <option>Snowflake</option>
+              <option>Databricks</option>
+              <option>Dremio</option>
+              <option>SQL Database</option>
+              <option>REST API / JSON</option>
+              <option>XML / SOAP</option>
+              <option>CSV / Flat File</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option>Generic / Other</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target system</label>
+          <select id="tgt2">
+            <optgroup label="ERP">
+              <option>Microsoft D365 F&O</option>
+              <option>SAP S/4HANA</option>
+              <option>SAP ECC</option>
+              <option>Oracle ERP Cloud</option>
+              <option>Oracle E-Business Suite</option>
+              <option>NetSuite</option>
+              <option>Infor</option>
+              <option>Epicor</option>
+            </optgroup>
+            <optgroup label="CRM">
+              <option>Salesforce</option>
+              <option>Microsoft Dynamics 365 CRM</option>
+              <option>HubSpot</option>
+              <option>Zoho CRM</option>
+              <option>ServiceNow</option>
+            </optgroup>
+            <optgroup label="HR / Payroll">
+              <option>Workday</option>
+              <option>ADP</option>
+              <option>BambooHR</option>
+              <option>Deputy</option>
+              <option>UKG (Kronos)</option>
+              <option>SuccessFactors</option>
+            </optgroup>
+            <optgroup label="Finance / Banking">
+              <option>Xero</option>
+              <option>QuickBooks</option>
+              <option>Sage</option>
+              <option>MYOB</option>
+              <option>Temenos</option>
+            </optgroup>
+            <optgroup label="E-commerce / Retail">
+              <option>Shopify</option>
+              <option>Magento</option>
+              <option>WooCommerce</option>
+              <option>BigCommerce</option>
+            </optgroup>
+            <optgroup label="Logistics / Supply Chain">
+              <option>Manhattan Associates</option>
+              <option>JDA / Blue Yonder</option>
+              <option>Oracle SCM</option>
+              <option>SAP SCM</option>
+            </optgroup>
+            <optgroup label="Healthcare">
+              <option>Epic (EHR)</option>
+              <option>Cerner</option>
+              <option>HL7 / FHIR</option>
+            </optgroup>
+            <optgroup label="Data / Analytics">
+              <option>Snowflake</option>
+              <option>Databricks</option>
+              <option>Dremio</option>
+              <option>SQL Database</option>
+              <option>REST API / JSON</option>
+              <option>XML / SOAP</option>
+              <option>CSV / Flat File</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option>Generic / Other</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <button class="gen-btn" id="btn-d" onclick="generate('describe')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Generate DataWeave
+      </button>
+    </div>
+
+    <!-- CHAT -->
+    <div id="panel-chat" class="panel">
+      <div class="chat-wrap">
+        <div class="chat-actions" id="chat-actions">
+          <button class="chat-action-btn btn-copy" onclick="copyChatCode()">Copy DataWeave</button>
+          <button class="chat-action-btn btn-reset" onclick="resetChat()">Start over</button>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chat-input" placeholder="Type here or tap an option above..." rows="1" onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+          <button class="chat-send" id="chat-send" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-bar"></div></div>
+    <div class="progress-msg" id="progress-msg"><div class="progress-spinner"></div>Starting...</div>
+  </div>
+
+  <div class="error-box" id="err"></div>
+
+  <div class="output-wrap" id="out-wrap">
+    <div class="output-card">
+      <div class="output-head">
+        <div class="output-head-left">
+          <span class="output-label">Generated DataWeave</span>
+          <span class="success-badge" id="success-badge">Ready to paste</span>
+        </div>
+        <button class="copy-btn" id="copy-btn" onclick="copyCode()">Copy</button>
+      </div>
+      <pre class="code-out" id="code-out"></pre>
+      <div class="expl-box" id="expl-box">
+        <span class="expl-label">What this does and why</span>
+        <span id="expl-text"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="tips-card">
+    <h3>Tips for better results</h3>
+    <ul class="tips-list">
+      <li>Use real field names from your actual system. Generic names give generic output.</li>
+      <li>Say "single record" or "batch of records" so DWForge structures the code correctly.</li>
+      <li>Mention null rules. For example: skip the record if ID is null, or default amount to 0.</li>
+      <li>Specify date formats both ways. What format is it coming in, and what does the target expect.</li>
+      <li>For Salesforce sources, include relationship fields like Account__r.ERP_ID__c in your description.</li>
+    </ul>
+  </div>
+
+  <div class="privacy-note">Your payloads are used only to generate DataWeave in that session. We do not store, log, or retain any data you submit. All product names are trademarks of their respective owners. DWForge is not affiliated with any platform listed.</div>
+</div>
+
+<script>
+function sanitise(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function cleanCode(raw) {
+  return raw.trim().replace(/^```[\w]*\n?/gm,'').replace(/```\s*$/gm,'').replace(/^\s*dataweave\s*\n/i,'').trim();
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+function closeTip() {
+  document.getElementById('welcome-tip').style.display = 'none';
+}
+
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('out-wrap').classList.remove('visible');
+  document.getElementById('progress-wrap').classList.remove('visible');
+  document.getElementById('err').classList.remove('visible');
+  if (name === 'chat' && chatStep === -1) initChat();
+}
+
+const progressSteps = [
+  { msg: 'Reading your fields...', pct: 15 },
+  { msg: 'Understanding the transformation...', pct: 35 },
+  { msg: 'Mapping source to target...', pct: 55 },
+  { msg: 'Adding null safety...', pct: 72 },
+  { msg: 'Handling date conversion...', pct: 85 },
+  { msg: 'Final checks...', pct: 95 }
+];
+let progressTimer = null;
+
+function startProgress() {
+  const wrap = document.getElementById('progress-wrap');
+  const bar = document.getElementById('progress-bar');
+  const msg = document.getElementById('progress-msg');
+  wrap.classList.add('visible');
+  bar.style.width = '5%';
+  let step = 0;
+  function tick() {
+    if (step < progressSteps.length) {
+      bar.style.width = progressSteps[step].pct + '%';
+      msg.innerHTML = '<div class="progress-spinner"></div>' + progressSteps[step].msg;
+      step++;
+      progressTimer = setTimeout(tick, 1200);
+    }
+  }
+  progressTimer = setTimeout(tick, 300);
+}
+
+function stopProgress(success) {
+  clearTimeout(progressTimer);
+  const bar = document.getElementById('progress-bar');
+  const msg = document.getElementById('progress-msg');
+  if (success) {
+    bar.style.width = '100%';
+    bar.style.background = 'var(--green)';
+    msg.innerHTML = 'Done. Copy it into Anypoint Studio.';
+    setTimeout(() => {
+      document.getElementById('progress-wrap').classList.remove('visible');
+      bar.style.background = 'var(--blue)';
+    }, 1800);
+  } else {
+    document.getElementById('progress-wrap').classList.remove('visible');
+  }
+}
+
+async function callAPI(prompt) {
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error || 'Generation failed. Please try again.');
+  }
+  const data = await res.json();
+  return (data.content || []).map(b => b.text || '').join('');
+}
+
+function buildPrompt(mode) {
+  if (mode === 'samples') {
+    const inp = document.getElementById('inp').value.trim();
+    const out = document.getElementById('out').value.trim();
+    const notes = document.getElementById('notes').value.trim();
+    const src = document.getElementById('src').value;
+    const tgt = document.getElementById('tgt').value;
+    if (!inp || !out) return null;
+    return `Generate production-ready DataWeave 2.0.\nSource system: ${src}\nTarget system: ${tgt}\nInput payload:\n${inp}\nExpected output:\n${out}${notes ? '\nInstructions: ' + notes : ''}`;
+  } else {
+    const d = document.getElementById('desc').value.trim();
+    const src = document.getElementById('src2').value;
+    const tgt = document.getElementById('tgt2').value;
+    if (!d) return null;
+    return `Generate production-ready DataWeave 2.0.\nSource system: ${src}\nTarget system: ${tgt}\nRequirement: ${d}`;
+  }
+}
+
+async function generate(mode) {
+  const btnId = mode === 'samples' ? 'btn-s' : 'btn-d';
+  const btn = document.getElementById(btnId);
+  const err = document.getElementById('err');
+  const outWrap = document.getElementById('out-wrap');
+  const codeOut = document.getElementById('code-out');
+  const explBox = document.getElementById('expl-box');
+  const badge = document.getElementById('success-badge');
+
+  const prompt = buildPrompt(mode);
+  if (!prompt) {
+    err.textContent = mode === 'samples' ? 'Please fill in both the input and expected output fields.' : 'Please describe your transformation.';
+    err.classList.add('visible');
+    return;
+  }
+
+  err.classList.remove('visible');
+  outWrap.classList.remove('visible');
+  btn.disabled = true;
+  badge.classList.remove('visible');
+  explBox.style.display = 'none';
+  startProgress();
+
+  try {
+    const full = await callAPI(prompt);
+    const parts = full.split('EXPLANATION:');
+    const code = cleanCode(parts[0]);
+    codeOut.textContent = code;
+    if (parts[1]) {
+      document.getElementById('expl-text').textContent = parts[1].trim();
+      explBox.style.display = 'block';
+    }
+    outWrap.classList.add('visible');
+    badge.classList.add('visible');
+    stopProgress(true);
+    setTimeout(() => outWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+  } catch (e) {
+    stopProgress(false);
+    err.textContent = e.message;
+    err.classList.add('visible');
+  }
+  btn.disabled = false;
+}
+
+function copyCode() {
+  const code = document.getElementById('code-out').textContent;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.classList.add('copied');
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.classList.remove('copied'); btn.textContent = 'Copy'; }, 2500);
+  });
+}
+
+let chatStep = -1;
+let chatContext = {};
+let generatedCode = '';
+
+const questions = [
+  {
+    key: 'source',
+    text: "Right, let's sort this out.\n\nWhat system is the data coming from?",
+    quick: ['Salesforce', 'SAP S/4HANA', 'Microsoft D365', 'Workday', 'Oracle ERP', 'NetSuite', 'Something else']
+  },
+  {
+    key: 'target',
+    text: "And where does it need to land?",
+    quick: ['Microsoft D365 F&O', 'Salesforce', 'SAP S/4HANA', 'Workday', 'SQL Database', 'REST API', 'Something else']
+  },
+  {
+    key: 'fields',
+    text: "Tell me about the source fields. Just list them out with what each one holds.\n\nDon't worry about being precise. Something like:\nName is the order number\nStatus__c is the status\nAccount__r.ERP_ID__c is the account ID, can be null",
+    quick: []
+  },
+  {
+    key: 'target_fields',
+    text: "Good. What fields do you need on the other side? Just the names is fine, I will work out the types.",
+    quick: []
+  },
+  {
+    key: 'nulls',
+    text: "Any null handling to worry about?\n\nFor example, skip the whole record if the account ID is missing. Or default a null amount to zero. That sort of thing.\n\nIf nothing special, just say no.",
+    quick: ['Skip record if key field is null', 'Default null numbers to 0', 'Default null strings to empty', 'No nulls to worry about']
+  },
+  {
+    key: 'dates',
+    text: "Any date fields that need converting?\n\nWhat format are they in, and what does the target expect?\n\nOr just say no dates.",
+    quick: ['Convert to ISO 8601 UTC', 'Convert to DD/MM/YYYY', 'Convert to YYYY-MM-DD', 'No dates']
+  },
+  {
+    key: 'batch',
+    text: "Last one. Single record or a batch?\n\nThis changes the structure of the DataWeave.",
+    quick: ['Single record', 'Batch of records']
+  }
+];
+
+function initChat() {
+  chatStep = 0;
+  chatContext = {};
+  generatedCode = '';
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('chat-actions').classList.remove('visible');
+  setTimeout(() => addAIMsg(questions[0].text, questions[0].quick), 200);
+}
+
+function addAIMsg(text, quickReplies = []) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = `
+    <div class="msg-avatar">DW</div>
+    <div>
+      <div class="msg-bubble">${sanitise(text).replace(/\n/g,'<br>')}</div>
+      ${quickReplies.length ? `<div class="quick-replies">${quickReplies.map(r=>`<span class="quick-reply" onclick="quickReply('${sanitise(r)}')">${sanitise(r)}</span>`).join('')}</div>` : ''}
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMsg(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `<div class="msg-avatar">You</div><div class="msg-bubble">${sanitise(text)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing';
+  div.innerHTML = `<div class="msg-avatar">DW</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const el = document.getElementById('typing');
+  if (el) el.remove();
+}
+
+function quickReply(text) {
+  document.getElementById('chat-input').value = text;
+  sendChat();
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || chatStep < 0) return;
+  input.value = '';
+  input.style.height = 'auto';
+  addUserMsg(text);
+  chatContext[questions[chatStep].key] = text;
+  chatStep++;
+  if (chatStep < questions.length) {
+    setTimeout(() => addAIMsg(questions[chatStep].text, questions[chatStep].quick), 400);
+  } else {
+    await generateFromChat();
+  }
+}
+
+async function generateFromChat() {
+  addTyping();
+  document.getElementById('chat-send').disabled = true;
+
+  const prompt = `Generate production-ready DataWeave 2.0 for this transformation.
+Source system: ${chatContext.source}
+Target system: ${chatContext.target}
+Source fields: ${chatContext.fields}
+Target fields needed: ${chatContext.target_fields}
+Null handling: ${chatContext.nulls}
+Date conversion: ${chatContext.dates}
+Record type: ${chatContext.batch}`;
+
+  try {
+    const full = await callAPI(prompt);
+    removeTyping();
+    const parts = full.split('EXPLANATION:');
+    const code = cleanCode(parts[0]);
+    const expl = parts[1] ? parts[1].trim() : '';
+    generatedCode = code;
+
+    const msgs = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.style.maxWidth = '100%';
+    div.innerHTML = `
+      <div class="msg-avatar">DW</div>
+      <div style="flex:1;min-width:0">
+        <div class="msg-bubble" style="margin-bottom:8px">There it is. Paste that into Anypoint Studio and it should run clean.</div>
+        <div class="msg-bubble code-bubble">${sanitise(code)}</div>
+        ${expl ? `<div class="msg-bubble" style="margin-top:8px;background:var(--blue-light);border-color:#B5D4F4;color:#1e3a5f"><strong style="font-size:11px;display:block;margin-bottom:3px;color:var(--blue);text-transform:uppercase;letter-spacing:0.05em">What this does and why</strong>${sanitise(expl)}</div>` : ''}
+        <div class="msg-bubble" style="margin-top:8px;background:var(--green-light);border-color:#86efac;color:#15803d;font-size:13px">If anything looks off, tell me and I will fix it.</div>
+      </div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    document.getElementById('chat-actions').classList.add('visible');
+  } catch(e) {
+    removeTyping();
+    addAIMsg("Something went wrong on my end. Try again, or use the Describe tab and type it out instead.");
+  }
+  document.getElementById('chat-send').disabled = false;
+}
+
+function copyChatCode() {
+  if (!generatedCode) return;
+  navigator.clipboard.writeText(generatedCode).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 2500);
+  });
+}
+
+function resetChat() {
+  chatStep = -1;
+  initChat();
+}
+</script>
+</body>
+</html>
