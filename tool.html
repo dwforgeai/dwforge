@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DataWeave Generator — DWForge AI</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #185FA5; --blue-light: #E6F1FB; --blue-dark: #0C447C;
+    --text: #1a1a1a; --text-muted: #6b7280; --border: #e5e7eb;
+    --bg: #ffffff; --bg-secondary: #f9fafb; --radius: 10px;
+    --green: #16a34a; --green-light: #f0fdf4;
+    --red: #dc2626; --red-light: #fef2f2;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); background: var(--bg-secondary); min-height: 100vh; }
+  a { text-decoration: none; color: inherit; }
+
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 2rem; border-bottom: 1px solid var(--border); background: #fff; }
+  .nav-logo { display: flex; align-items: center; gap: 9px; font-size: 16px; font-weight: 700; }
+  .nav-logo-icon { width: 28px; height: 28px; background: var(--blue); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+  .nav-logo-icon svg { width: 14px; height: 14px; fill: #fff; }
+  .dw { color: var(--blue); }
+  .beta { font-size: 11px; background: var(--green-light); color: var(--green); padding: 2px 8px; border-radius: 20px; font-weight: 600; margin-left: 4px; }
+  .nav-right { display: flex; align-items: center; gap: 1rem; font-size: 13px; color: var(--text-muted); }
+  .nav-right a:hover { color: var(--text); }
+  .upgrade { background: var(--blue); color: #fff !important; padding: 6px 14px; border-radius: 7px; font-weight: 500; }
+  .upgrade:hover { background: var(--blue-dark) !important; }
+
+  .layout { max-width: 880px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 1.5rem; }
+
+  .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--bg-secondary); }
+  .tab { padding: 11px 18px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); background: #fff; }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .panel { display: none; padding: 1.5rem; }
+  .panel.active { display: block; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  textarea { width: 100%; min-height: 140px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 12px; resize: vertical; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text); line-height: 1.6; transition: border-color 0.15s; }
+  textarea:focus { outline: none; border-color: var(--blue); background: #fff; box-shadow: 0 0 0 3px rgba(24,95,165,0.08); }
+  textarea.plain { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 13px; min-height: 110px; }
+  select { width: 100%; padding: 9px 12px; font-size: 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text); transition: border-color 0.15s; }
+  select:focus { outline: none; border-color: var(--blue); }
+
+  .gen-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 600; background: var(--blue); color: #fff; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s; margin-top: 1rem; }
+  .gen-btn:hover:not(:disabled) { background: var(--blue-dark); }
+  .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .gen-btn svg { width: 15px; height: 15px; fill: currentColor; }
+
+  .error-box { margin-top: 1rem; padding: 10px 14px; background: var(--red-light); border: 1px solid #fca5a5; border-radius: 8px; font-size: 13px; color: var(--red); display: none; }
+  .error-box.visible { display: block; }
+
+  .output-wrap { margin-top: 1.5rem; display: none; }
+  .output-wrap.visible { display: block; }
+  .output-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .output-head { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+  .output-label { font-size: 12px; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .output-label svg { width: 14px; height: 14px; stroke: var(--text-muted); fill: none; stroke-width: 2; }
+  .copy-btn { display: flex; align-items: center; gap: 5px; padding: 5px 12px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); border-radius: 6px; background: #fff; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .copy-btn:hover { background: var(--bg-secondary); }
+  .copy-btn.copied { color: var(--green); border-color: #86efac; }
+  .copy-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .loading { display: none; align-items: center; gap: 10px; padding: 20px 16px; font-size: 13px; color: var(--text-muted); }
+  .loading.visible { display: flex; }
+  .spin { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .code-out { padding: 16px; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 12px; line-height: 1.7; color: var(--text); white-space: pre-wrap; word-break: break-word; max-height: 420px; overflow-y: auto; background: #fff; }
+  .expl-box { padding: 12px 16px; font-size: 13px; color: #1e3a5f; line-height: 1.7; background: var(--blue-light); border-top: 1px solid #B5D4F4; display: none; }
+  .expl-box strong { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; color: var(--blue); }
+
+  /* ── Chat mode styles ── */
+  .chat-wrap { display: flex; flex-direction: column; height: 480px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px; background: var(--bg-secondary); border-radius: 8px; margin-bottom: 12px; }
+  .msg { display: flex; gap: 10px; align-items: flex-start; max-width: 85%; }
+  .msg.ai { align-self: flex-start; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .msg-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .ai .msg-avatar { background: var(--blue); color: #fff; }
+  .user .msg-avatar { background: #e5e7eb; color: var(--text-muted); }
+  .msg-bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
+  .ai .msg-bubble { background: #fff; border: 1px solid var(--border); color: var(--text); border-top-left-radius: 4px; }
+  .user .msg-bubble { background: var(--blue); color: #fff; border-top-right-radius: 4px; }
+  .msg-bubble.code-bubble { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 11px; white-space: pre-wrap; background: #1e293b; color: #e2e8f0; border: none; max-height: 300px; overflow-y: auto; }
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input { flex: 1; padding: 10px 14px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text); resize: none; min-height: 44px; max-height: 120px; line-height: 1.5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; transition: border-color 0.15s; }
+  .chat-input:focus { outline: none; border-color: var(--blue); }
+  .chat-send { padding: 10px 18px; background: var(--blue); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background 0.15s; display: flex; align-items: center; gap: 6px; }
+  .chat-send:hover:not(:disabled) { background: var(--blue-dark); }
+  .chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+  .chat-copy-row { margin-top: 10px; display: none; }
+  .chat-copy-row.visible { display: flex; gap: 8px; }
+  .chat-action-btn { padding: 8px 16px; font-size: 13px; font-weight: 500; border-radius: 7px; cursor: pointer; transition: all 0.15s; }
+  .btn-outline { background: #fff; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { border-color: #9ca3af; }
+  .btn-solid { background: var(--blue); border: none; color: #fff; }
+  .btn-solid:hover { background: var(--blue-dark); }
+  .typing-indicator { display: flex; gap: 4px; padding: 12px 14px; }
+  .typing-dot { width: 7px; height: 7px; background: var(--text-muted); border-radius: 50%; animation: bounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+  .quick-replies { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .quick-reply { padding: 5px 12px; font-size: 12px; background: var(--blue-light); color: var(--blue); border: 1px solid #B5D4F4; border-radius: 20px; cursor: pointer; transition: all 0.15s; font-weight: 500; }
+  .quick-reply:hover { background: var(--blue); color: #fff; }
+  .chat-reset { font-size: 12px; color: var(--text-muted); cursor: pointer; text-decoration: underline; margin-left: auto; }
+  .chat-reset:hover { color: var(--text); }
+
+  .tips-card { margin-top: 1.5rem; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; }
+  .tips-card h3 { font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tips-list { display: flex; flex-direction: column; gap: 8px; }
+  .tips-list li { font-size: 13px; color: var(--text-muted); display: flex; gap: 8px; list-style: none; line-height: 1.5; }
+  .tips-list li::before { content: "→"; color: var(--blue); flex-shrink: 0; }
+
+  @media (max-width: 580px) {
+    .form-row { grid-template-columns: 1fr; }
+    .layout { padding: 1rem; }
+    nav { padding: 0.875rem 1rem; }
+    .msg { max-width: 95%; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+    <span><span class="dw">DW</span>Forge AI</span>
+    <span class="beta">Free Beta</span>
+  </a>
+  <div class="nav-right">
+    <a href="pricing.html">Pricing</a>
+    <a href="pricing.html" class="upgrade">Get Pro alerts</a>
+  </div>
+</nav>
+
+<div class="layout">
+  <div class="page-title">DataWeave Generator</div>
+  <div class="page-sub">Three ways to generate — paste samples, describe, or chat with DWForge AI.</div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('samples', this)">📋 Paste samples</button>
+      <button class="tab" onclick="switchTab('describe', this)">💬 Describe problem</button>
+      <button class="tab" onclick="switchTab('chat', this)">🤖 Chat with DWForge</button>
+    </div>
+
+    <!-- PASTE SAMPLES -->
+    <div id="panel-samples" class="panel active">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Input payload (JSON / XML / CSV)</label>
+          <textarea id="inp" placeholder='{"Id": "001XX000003GYnj", "Name": "ORD-2024-00123", "Status__c": "Active", "Account__r": {"ERP_ID__c": "ACC-1001", "Name": "Global Retail Ltd"}, "Entity__c": "US01", "StartDate__c": "2024-06-01", "Amount__c": null}'></textarea>
+        </div>
+        <div class="form-group">
+          <label>Expected output</label>
+          <textarea id="out" placeholder='{"OrderNumber": "ORD-2024-00123", "AccountId": "ACC-1001", "Status": "Active", "CompanyId": "US01", "TotalAmount": 0.00, "StartDate": "2024-06-01T00:00:00Z"}'></textarea>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:1rem">
+        <label>Special instructions</label>
+        <textarea class="plain" id="notes" placeholder="e.g. Default null Amount to 0. Skip record if AccountId is null. Convert date to ISO 8601 UTC."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Source system</label>
+          <select id="src">
+            <option>Salesforce</option>
+            <option>Microsoft D365 F&O</option>
+            <option>SAP</option>
+            <option>Generic / Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target system</label>
+          <select id="tgt">
+            <option>Microsoft D365 F&O</option>
+            <option>Salesforce</option>
+            <option>SQL Database</option>
+            <option>Generic / Other</option>
+          </select>
+        </div>
+      </div>
+      <button class="gen-btn" id="btn-s" onclick="generate('samples')">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Generate DataWeave
+      </button>
+    </div>
+
+    <!-- DESCRIBE PROBLEM -->
+    <div id="panel-describe" class="panel">
+      <div class="form-group" style="margin-bottom:1rem">
+        <label>Describe your transformation in plain English</label>
+        <textarea class="plain" id="desc" style="min-height:140px" placeholder="e.g. I have an Order record with nested account details. Transform it into an ERP payload. Convert the start date from ISO to DD/MM/YYYY. Default any null amounts to 0. Map the Entity field to CompanyId in the output. This is a single record transformation."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Source system</label>
+          <select id="src2">
+            <option>Salesforce</option>
+            <option>Microsoft D365 F&O</option>
+            <option>SAP</option>
+            <option>Generic / Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Target system</label>
+          <select id="tgt2">
+            <option>Microsoft D365 F&O</option>
+            <option>Salesforce</option>
+            <option>SQL Database</option>
+            <option>Generic / Other</option>
+          </select>
+        </div>
+      </div>
+      <button class="gen-btn" id="btn-d" onclick="generate('describe')">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Generate DataWeave
+      </button>
+    </div>
+
+    <!-- CHAT MODE -->
+    <div id="panel-chat" class="panel">
+      <div class="chat-wrap">
+        <div class="chat-messages" id="chat-messages">
+          <!-- Initial AI message injected by JS -->
+        </div>
+        <div class="chat-copy-row" id="chat-copy-row">
+          <button class="chat-action-btn btn-solid" onclick="copyChatCode()">📋 Copy DataWeave</button>
+          <button class="chat-action-btn btn-outline" onclick="resetChat()">Start over</button>
+        </div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chat-input" placeholder="Type here or pick an option above..." rows="1" onkeydown="handleChatKey(event)"></textarea>
+          <button class="chat-send" id="chat-send" onclick="sendChatMessage()">
+            Send ↗
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-box" id="err"></div>
+
+  <div class="output-wrap" id="out-wrap">
+    <div class="output-card">
+      <div class="output-head">
+        <span class="output-label">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+          Generated DataWeave
+        </span>
+        <button class="copy-btn" id="copy-btn" onclick="copyCode()">
+          <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="loading" id="loading"><div class="spin"></div>Generating production-ready DataWeave...</div>
+      <pre class="code-out" id="code-out"></pre>
+      <div class="expl-box" id="expl-box"><strong>Why this approach</strong><span id="expl-text"></span></div>
+    </div>
+  </div>
+
+  <div class="tips-card">
+    <h3>Tips for better results</h3>
+    <ul class="tips-list">
+      <li>Use real field names from your actual payload — generic names produce generic output.</li>
+      <li>Mention null handling explicitly: "skip record if null" or "default to empty string".</li>
+      <li>Specify date formats — source format and what the target expects.</li>
+      <li>Say "single record" or "batch of records" so DWForge generates the right structure.</li>
+      <li>For Salesforce sources, include relationship fields (__r) in your sample if the data is nested.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ── Tab switching ──
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'chat' && chatHistory.length === 0) initChat();
+}
+
+// ── API call ──
+async function callAPI(prompt) {
+  const res = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt })
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.error?.message || 'API error ' + res.status);
+  }
+  const data = await res.json();
+  return (data.content || []).map(b => b.text || '').join('');
+}
+
+// ── Prompt builder ──
+function buildPrompt(mode) {
+  if (mode === 'samples') {
+    const inp = document.getElementById('inp').value.trim();
+    const out = document.getElementById('out').value.trim();
+    const notes = document.getElementById('notes').value.trim();
+    const src = document.getElementById('src').value;
+    const tgt = document.getElementById('tgt').value;
+    if (!inp || !out) return null;
+    return `Generate production-ready DataWeave 2.0 for this transformation.
+Source system: ${src}
+Target system: ${tgt}
+Input payload: ${inp}
+Expected output: ${out}
+${notes ? 'Special instructions: ' + notes : ''}
+This is a single record transformation.`;
+  } else {
+    const d = document.getElementById('desc').value.trim();
+    const src = document.getElementById('src2').value;
+    const tgt = document.getElementById('tgt2').value;
+    if (!d) return null;
+    return `Generate production-ready DataWeave 2.0 for this transformation.
+Source system: ${src}
+Target system: ${tgt}
+Requirement: ${d}`;
+  }
+}
+
+// ── Standard generate ──
+async function generate(mode) {
+  const btnId = mode === 'samples' ? 'btn-s' : 'btn-d';
+  const btn = document.getElementById(btnId);
+  const err = document.getElementById('err');
+  const outWrap = document.getElementById('out-wrap');
+  const loading = document.getElementById('loading');
+  const codeOut = document.getElementById('code-out');
+  const explBox = document.getElementById('expl-box');
+  const explText = document.getElementById('expl-text');
+
+  const prompt = buildPrompt(mode);
+  if (!prompt) {
+    err.textContent = mode === 'samples'
+      ? 'Please fill in both the input payload and expected output.'
+      : 'Please describe your transformation.';
+    err.classList.add('visible');
+    return;
+  }
+
+  err.classList.remove('visible');
+  btn.disabled = true;
+  outWrap.classList.add('visible');
+  loading.classList.add('visible');
+  codeOut.textContent = '';
+  explBox.style.display = 'none';
+
+  try {
+    const full = await callAPI(prompt);
+    const parts = full.split('EXPLANATION:');
+    const code = parts[0].trim().replace(/^```[\w]*\n?/gm, '').replace(/```$/gm, '').trim();
+    codeOut.textContent = code;
+    if (parts[1]) {
+      explText.textContent = parts[1].trim();
+      explBox.style.display = 'block';
+    }
+  } catch (e) {
+    outWrap.classList.remove('visible');
+    err.textContent = 'Error: ' + e.message;
+    err.classList.add('visible');
+  }
+
+  loading.classList.remove('visible');
+  btn.disabled = false;
+}
+
+function copyCode() {
+  const code = document.getElementById('code-out').textContent;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="20,6 9,17 4,12"/></svg> Copied!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy';
+    }, 2000);
+  });
+}
+
+// ── CHAT MODE ──
+let chatHistory = [];
+let chatContext = {};
+let generatedCode = '';
+let chatStep = 0;
+
+const questions = [
+  {
+    key: 'source',
+    text: "Hey, let's get this transformation sorted.\n\nWhat system is the data coming from?",
+    quick: ['Salesforce', 'Microsoft D365 F&O', 'SAP', 'Something else']
+  },
+  {
+    key: 'target',
+    text: "And where does it need to land?",
+    quick: ['Microsoft D365 F&O', 'Salesforce', 'SQL Database', 'Something else']
+  },
+  {
+    key: 'fields',
+    text: "Right, tell me about the fields you're working with on the source side.\n\nJust list them out — field name and what it holds. Don't worry about being perfect, I'll work with whatever you give me.\n\nFor example:\n— Name → order reference\n— Status__c → current status\n— Account__r.ERP_ID__c → ERP account ID, can be null",
+    quick: []
+  },
+  {
+    key: 'target_fields',
+    text: "Good. And what do you need on the target side — what fields does the receiving system expect?\n\nIf you're not sure of the exact names, just describe what you need and I'll figure it out.",
+    quick: []
+  },
+  {
+    key: 'nulls',
+    text: "Any fields that can be null? Tell me how you want to handle them.\n\nFor example — skip the whole record if the account ID is missing, or default a null amount to zero. That sort of thing.\n\nIf nothing special, just say 'no nulls to worry about'.",
+    quick: ['Skip record if key field is null', 'Default null numbers to 0', 'Default null strings to empty', 'No nulls to worry about']
+  },
+  {
+    key: 'dates',
+    text: "Any date fields that need converting? What format are they in coming in, and what does the target expect?\n\nOr just say 'no dates' if it's not relevant.",
+    quick: ['Convert to ISO 8601 UTC (e.g. 2024-06-01T00:00:00Z)', 'Convert to DD/MM/YYYY', 'No dates']
+  },
+  {
+    key: 'batch',
+    text: "Last thing — are you transforming a single record at a time, or processing a batch of records?\n\nThis changes how the DataWeave is structured.",
+    quick: ['Single record', 'Batch of records']
+  }
+];
+
+function initChat() {
+  chatHistory = [];
+  chatContext = {};
+  chatStep = 0;
+  generatedCode = '';
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('chat-copy-row').classList.remove('visible');
+  addAIMessage(questions[0].text, questions[0].quick);
+}
+
+function addAIMessage(text, quickReplies = []) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.innerHTML = `
+    <div class="msg-avatar">DW</div>
+    <div>
+      <div class="msg-bubble">${text.replace(/\n/g, '<br>')}</div>
+      ${quickReplies.length ? `<div class="quick-replies">${quickReplies.map(r => `<span class="quick-reply" onclick="quickReply('${r}')">${r}</span>`).join('')}</div>` : ''}
+    </div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addUserMessage(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `<div class="msg-avatar">You</div><div class="msg-bubble">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTypingIndicator() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.id = 'typing';
+  div.innerHTML = `<div class="msg-avatar">DW</div><div class="msg-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById('typing');
+  if (el) el.remove();
+}
+
+function quickReply(text) {
+  document.getElementById('chat-input').value = text;
+  sendChatMessage();
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+
+async function sendChatMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  addUserMessage(text);
+
+  const currentQ = questions[chatStep];
+  chatContext[currentQ.key] = text;
+  chatStep++;
+
+  if (chatStep < questions.length) {
+    setTimeout(() => {
+      const next = questions[chatStep];
+      addAIMessage(next.text, next.quick);
+    }, 400);
+  } else {
+    await generateFromChat();
+  }
+}
+
+async function generateFromChat() {
+  addTypingIndicator();
+  document.getElementById('chat-send').disabled = true;
+
+  const prompt = `Generate production-ready DataWeave 2.0 for this transformation.
+
+Source system: ${chatContext.source}
+Target system: ${chatContext.target}
+Source fields: ${chatContext.fields}
+Target fields expected: ${chatContext.target_fields}
+Null handling: ${chatContext.nulls}
+Date conversion: ${chatContext.dates}
+Record type: ${chatContext.batch}
+
+Generate complete DataWeave code only. No explanations before the code.
+After the code write "EXPLANATION:" then 2-3 plain English sentences.`;
+
+  try {
+    const full = await callAPI(prompt);
+    removeTypingIndicator();
+
+    const parts = full.split('EXPLANATION:');
+    const code = parts[0].trim().replace(/^```[\w]*\n?/gm, '').replace(/```$/gm, '').trim();
+    const expl = parts[1] ? parts[1].trim() : '';
+    generatedCode = code;
+
+    const msgs = document.getElementById('chat-messages');
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.style.maxWidth = '100%';
+    div.innerHTML = `
+      <div class="msg-avatar">DW</div>
+      <div style="flex:1">
+        <div class="msg-bubble" style="margin-bottom:8px">Here you go — copy this straight into Anypoint Studio, it's ready to go:</div>
+        <div class="msg-bubble code-bubble">${code}</div>
+        ${expl ? `<div class="msg-bubble" style="margin-top:8px;background:var(--blue-light);border-color:#B5D4F4;color:#1e3a5f"><strong style="font-size:11px;display:block;margin-bottom:4px;color:var(--blue);text-transform:uppercase;letter-spacing:0.05em">What I did and why</strong>${expl}</div>` : ''}
+      </div>`;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    document.getElementById('chat-copy-row').classList.add('visible');
+
+  } catch (e) {
+    removeTypingIndicator();
+    addAIMessage("Something went wrong on my end. Give it another go.");
+  }
+
+  document.getElementById('chat-send').disabled = false;
+}
+
+function copyChatCode() {
+  if (!generatedCode) return;
+  navigator.clipboard.writeText(generatedCode).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy DataWeave', 2000);
+  });
+}
+
+function resetChat() {
+  chatHistory = [];
+  chatContext = {};
+  chatStep = 0;
+  generatedCode = '';
+  document.getElementById('chat-messages').innerHTML = '';
+  document.getElementById('chat-copy-row').classList.remove('visible');
+  initChat();
+}
+</script>
+</body>
+</html>
