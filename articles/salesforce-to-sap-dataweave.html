@@ -454,17 +454,23 @@ if (payload.Account__r.SAP_Customer_ID__c != null)
 else {}</code></pre>
 
   <h2 id="testing">11. Testing in the DataWeave Playground</h2>
-  <p>Before you paste this into Anypoint Studio, validate it at <a href="https://dataweave.mulesoft.com/learn/dataweave" target="_blank">dataweave.mulesoft.com</a>. Use this test payload in the left panel:</p>
-  <pre><code>{
-  "Name": "ORD-2024-00123",
-  "EffectiveDate": "2024-06-01",
-  "TotalAmount": 15000.00,
-  "Account__r": { "SAP_Customer_ID__c": "CUST-10045" },
-  "Product__r": { "SAP_Material_Number__c": "MAT-88901" },
-  "Legal_Entity__c": "AU01",
-  "Currency__c": "AUD",
-  "Quantity__c": 12.0
-}</code></pre>
+  <p>We tested this exact transformation in DWForge and validated it in the DataWeave Playground. Here is what it looks like end to end.</p>
+
+  <p><strong>Step 1.</strong> Paste your Salesforce payload and expected SAP output into DWForge. Select Salesforce as source and SAP S/4HANA as target. Click Generate. Done in seconds.</p>
+
+  <div style="margin:1.5rem 0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+    <img src="dwforge-sap-generated.png" alt="DWForge generating Salesforce to SAP DataWeave transformation" style="width:100%;display:block"/>
+    <div style="padding:8px 14px;background:var(--bg-secondary);font-size:12px;color:var(--text-muted)">DWForge generates the complete Salesforce to SAP DataWeave in seconds. Date conversion, null handling, and SAP OData structure all applied automatically.</div>
+  </div>
+
+  <p><strong>Step 2.</strong> Copy the generated DataWeave and paste it into the DataWeave Playground with your Salesforce payload. The output matches exactly what SAP S/4HANA expects.</p>
+
+  <div style="margin:1.5rem 0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+    <img src="dwforge-sap-playground.png" alt="DataWeave Playground showing correct Salesforce to SAP output" style="width:100%;display:block"/>
+    <div style="padding:8px 14px;background:var(--bg-secondary);font-size:12px;color:var(--text-muted)">DataWeave Playground output. SalesOrderType ZOR, SoldToParty CUST-10045, RequestedDeliveryDate in ISO 8601, Material and NetAmount correct. Compiles first time. No edits needed.</div>
+  </div>
+
+  <p>The payload on the left, the generated DataWeave in the middle, the correct SAP output on the right. That is what DWForge produces every time.</p>
 
   <div class="callout success">
     <div class="callout-title">DWForge generates all of this for you</div>
@@ -480,6 +486,7 @@ else {}</code></pre>
   <div class="related">
     <h3>More guides</h3>
     <div style="display:flex;flex-direction:column;gap:8px">
+      <a href="workday-to-salesforce-dataweave.html" style="font-size:14px">Workday to Salesforce DataWeave: Employee Data Sync Guide</a>
       <a href="../index.html" style="font-size:14px">Back to DWForge home</a>
       <a href="../tool.html" style="font-size:14px">Generate DataWeave for your transformation</a>
     </div>
