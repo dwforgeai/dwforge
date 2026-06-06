@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workday to Salesforce DataWeave Transformation: Employee Data Sync Guide | DWForge</title>
+<meta name="description" content="Complete guide to transforming Workday employee XML payloads to Salesforce using DataWeave 2.0. Real field mapping, XML to JSON, null handling, and production-ready code. DWForge generates it in seconds.">
+<meta name="keywords" content="DataWeave Workday Salesforce transformation, MuleSoft Workday DataWeave, Workday employee sync DataWeave, XML to JSON DataWeave MuleSoft">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;600;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #1a5fa8; --blue-light: #e8f1fb; --blue-dark: #0d3d72;
+    --text: #1a1a1a; --text-muted: #5a6475; --border: #e2e6ec;
+    --bg: #ffffff; --bg-secondary: #f7f9fc; --radius: 8px;
+    --green: #15803d; --green-light: #f0fdf4;
+    --orange: #c2410c; --orange-light: #fff7ed;
+    --purple: #6d28d9; --purple-light: #f5f3ff;
+    --font: 'Calibri', 'Segoe UI', Arial, sans-serif;
+    --font-mono: 'Courier New', Courier, monospace;
+  }
+  body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.65; font-size: 16px; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: #fff; position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: var(--text); }
+  .logo-mark { width: 34px; height: 34px; background: var(--blue); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; }
+  .logo-dw { color: var(--blue); }
+  .nav-cta { background: var(--blue); color: #fff; padding: 8px 20px; border-radius: var(--radius); font-weight: 600; font-size: 14px; }
+  .nav-cta:hover { background: var(--blue-dark); text-decoration: none; color: #fff; }
+  .article-wrap { max-width: 820px; margin: 0 auto; padding: 3rem 2rem 5rem; }
+  .article-tag { display: inline-block; background: var(--blue-light); color: var(--blue); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem; }
+  .article-title { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1rem; }
+  .article-subtitle { font-size: 1.1rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 1.5rem; }
+  .article-info { display: flex; align-items: center; gap: 1.5rem; font-size: 13px; color: var(--text-muted); padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; margin-bottom: 2rem; }
+  .toc { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2.5rem; }
+  .toc-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 1rem; }
+  .toc ol { padding-left: 1.25rem; display: flex; flex-direction: column; gap: 6px; }
+  .toc li { font-size: 14px; }
+  h2 { font-size: 1.5rem; font-weight: 700; margin-top: 3rem; margin-bottom: 1rem; }
+  h3 { font-size: 1.15rem; font-weight: 700; margin-top: 2rem; margin-bottom: 0.75rem; }
+  p { margin-bottom: 1.25rem; }
+  ul, ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
+  li { font-size: 15px; line-height: 1.65; margin-bottom: 4px; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 1.25rem; border-radius: var(--radius); overflow-x: auto; margin-bottom: 1.5rem; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; }
+  code { font-family: var(--font-mono); font-size: 13px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: var(--orange); }
+  pre code { background: none; padding: 0; color: inherit; }
+  .callout { padding: 1rem 1.25rem; border-radius: var(--radius); margin-bottom: 1.5rem; font-size: 14px; line-height: 1.65; }
+  .callout.info { background: var(--blue-light); border-left: 3px solid var(--blue); color: #1e3a5f; }
+  .callout.warning { background: var(--orange-light); border-left: 3px solid var(--orange); color: #7c2d12; }
+  .callout.success { background: var(--green-light); border-left: 3px solid var(--green); color: #14532d; }
+  .callout.dwforge { background: #f5f3ff; border-left: 3px solid var(--purple); color: #3b0764; }
+  .callout-title { font-weight: 700; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .diagram-wrap { margin: 2rem 0; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; overflow-x: auto; }
+  .diagram-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 1.25rem; text-align: center; }
+  .field-table { width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; font-size: 14px; }
+  .field-table th { background: var(--blue); color: #fff; padding: 10px 14px; text-align: left; font-size: 13px; }
+  .field-table td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .field-table tr:nth-child(even) td { background: var(--bg-secondary); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .badge.required { background: #fee2e2; color: #991b1b; }
+  .badge.optional { background: #f0fdf4; color: #15803d; }
+  .badge.transform { background: var(--blue-light); color: var(--blue); }
+  .badge.xml { background: #f5f3ff; color: #6d28d9; }
+  .dwforge-banner { background: linear-gradient(135deg, #1a5fa8 0%, #0d3d72 100%); color: #fff; border-radius: var(--radius); padding: 1.5rem 2rem; margin: 2rem 0; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+  .dwforge-banner-text h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #fff; margin-top: 0; }
+  .dwforge-banner-text p { font-size: 14px; opacity: 0.85; margin-bottom: 0; }
+  .dwforge-banner-btn { background: #fff; color: var(--blue); padding: 9px 20px; border-radius: var(--radius); font-weight: 700; font-size: 14px; white-space: nowrap; flex-shrink: 0; display: inline-block; }
+  .dwforge-banner-btn:hover { background: #f0f4f8; text-decoration: none; color: var(--blue-dark); }
+  .cta-box { background: var(--blue); color: #fff; border-radius: var(--radius); padding: 2rem; margin: 3rem 0; text-align: center; }
+  .cta-box h3 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; color: #fff; margin-top: 0; }
+  .cta-box p { opacity: 0.85; margin-bottom: 1.25rem; font-size: 15px; }
+  .cta-box a { background: #fff; color: var(--blue); padding: 12px 28px; border-radius: var(--radius); font-weight: 700; font-size: 15px; display: inline-block; }
+  .cta-box a:hover { background: #f0f4f8; text-decoration: none; }
+  .time-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--green-light); color: var(--green); font-size: 13px; font-weight: 700; padding: 4px 12px; border-radius: 20px; margin-bottom: 1rem; }
+  .related { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border); }
+  .related h3 { font-size: 1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0; }
+  footer { background: var(--bg-secondary); border-top: 1px solid var(--border); padding: 1.5rem 2rem; text-align: center; font-size: 13px; color: var(--text-muted); }
+  @media (max-width: 600px) {
+    .article-wrap { padding: 2rem 1.25rem 4rem; }
+    nav { padding: 0.75rem 1rem; }
+    h2 { font-size: 1.3rem; }
+    pre { font-size: 12px; }
+    .dwforge-banner { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="logo">
+    <div class="logo-mark">DW</div>
+    <span><span class="logo-dw">DW</span>Forge</span>
+  </a>
+  <a href="../tool.html" class="nav-cta">Write my DataWeave</a>
+</nav>
+
+<div class="article-wrap">
+
+  <div class="article-tag">DataWeave Guide</div>
+  <h1 class="article-title">Workday to Salesforce DataWeave Transformation: Employee Data Sync Guide</h1>
+  <p class="article-subtitle">Workday returns XML. Salesforce wants JSON. And the field names match nothing on either side. This guide shows you exactly how to bridge that gap with DataWeave 2.0. Field by field, pattern by pattern, with working production code throughout.</p>
+
+  <div class="callout dwforge" style="margin-bottom:1.5rem;margin-top:0">
+    <div class="callout-title">DWForge generates this entire transformation in seconds</div>
+    Every pattern in this article is built into <a href="../tool.html" style="color:var(--purple);font-weight:700">DWForge</a>. Describe your Workday fields, pick Salesforce as your target, and get production-ready DataWeave instantly. What takes hours to write manually takes seconds with DWForge. <a href="../tool.html" style="color:var(--purple);font-weight:700">Try it free — no signup needed.</a>
+  </div>
+
+  <div class="article-info">
+    <span>By DWForge</span>
+    <span>June 2026</span>
+    <span>18 min read</span>
+    <span>MuleSoft, Workday, Salesforce</span>
+  </div>
+
+  <div class="toc">
+    <div class="toc-title">In this article</div>
+    <ol>
+      <li><a href="#overview">Why Workday to Salesforce sync is painful</a></li>
+      <li><a href="#architecture">Integration architecture</a></li>
+      <li><a href="#workday-payload">The Workday XML payload structure</a></li>
+      <li><a href="#salesforce-target">What Salesforce expects</a></li>
+      <li><a href="#field-mapping">Field mapping reference</a></li>
+      <li><a href="#xml-to-json">XML to JSON in DataWeave</a></li>
+      <li><a href="#null-handling">Null handling for HR fields</a></li>
+      <li><a href="#terminated">Handling terminated employees</a></li>
+      <li><a href="#batch">Batch sync transformation</a></li>
+      <li><a href="#complete">Complete production DataWeave</a></li>
+      <li><a href="#testing">Testing your transformation</a></li>
+    </ol>
+  </div>
+
+  <h2 id="overview">1. Why Workday to Salesforce sync is painful</h2>
+  <p>Most HR integrations look straightforward on paper. Workday has employee records. Salesforce needs them. Connect the two. Done.</p>
+  <p>In reality it is one of the most frustrating integration patterns in enterprise MuleSoft work. Here is why:</p>
+  <ul>
+    <li>Workday returns SOAP XML with deeply nested structures. Salesforce wants flat JSON.</li>
+    <li>Workday field names like <code>wd:Worker_Data</code> map to Salesforce fields like <code>EmployeeID__c</code>. Nothing is obvious.</li>
+    <li>HR data is full of optional fields. A terminated employee looks completely different from an active one.</li>
+    <li>Workday wraps everything in namespace prefixes. DataWeave handles this but you need to know the pattern.</li>
+    <li>Date formats do not match. Workday uses ISO 8601. Salesforce Date fields have their own expectations.</li>
+  </ul>
+
+  <div class="callout dwforge">
+    <div class="callout-title">DWForge handles all of this automatically</div>
+    Describe your Workday fields in plain English or paste your XML payload. <a href="../tool.html" style="color:var(--purple);font-weight:700">DWForge</a> generates the complete transformation including XML namespace handling, null safety, and Salesforce field mapping. In seconds, not hours.
+  </div>
+
+  <h2 id="architecture">2. Integration architecture</h2>
+  <p>The MuleSoft flow typically runs on a schedule, daily or hourly depending on the business requirement. It queries Workday via the SOAP connector, DataWeave transforms the XML response into Salesforce-compatible JSON, and the Salesforce connector upserts the records.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-title">Integration Architecture: Workday to Salesforce Employee Sync</div>
+    <svg width="100%" viewBox="0 0 740 280" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a5fa8" stroke-width="1.5" stroke-linecap="round"/></marker>
+        <marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#6d28d9" stroke-width="1.5" stroke-linecap="round"/></marker>
+      </defs>
+      <!-- Scheduler -->
+      <rect x="10" y="110" width="90" height="50" rx="6" fill="#f5f3ff" stroke="#6d28d9" stroke-width="1.5"/>
+      <text x="55" y="130" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" font-weight="700" fill="#3b0764">Scheduler</text>
+      <text x="55" y="148" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#6d28d9">Daily/Hourly</text>
+      <line x1="102" y1="135" x2="118" y2="135" stroke="#6d28d9" stroke-width="1.5" marker-end="url(#a2)"/>
+      <!-- Workday -->
+      <rect x="120" y="60" width="130" height="150" rx="8" fill="#fff7ed" stroke="#c2410c" stroke-width="1.5"/>
+      <rect x="120" y="60" width="130" height="32" rx="8" fill="#c2410c"/>
+      <rect x="120" y="78" width="130" height="14" fill="#c2410c"/>
+      <text x="185" y="81" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="13" font-weight="700" fill="#fff">Workday HCM</text>
+      <text x="185" y="112" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#7c2d12">SOAP XML</text>
+      <text x="185" y="129" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#7c2d12">wd:Worker_Data</text>
+      <text x="185" y="146" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#7c2d12">wd:Personal_Data</text>
+      <text x="185" y="163" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#7c2d12">wd:Employment</text>
+      <text x="185" y="180" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#7c2d12">wd:Organization</text>
+      <line x1="252" y1="135" x2="278" y2="135" stroke="#1a5fa8" stroke-width="2" marker-end="url(#a1)"/>
+      <text x="265" y="125" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#5a6475">XML</text>
+      <!-- MuleSoft container -->
+      <rect x="280" y="30" width="280" height="220" rx="8" fill="#e8f1fb" stroke="#1a5fa8" stroke-width="1.5" stroke-dasharray="6,3"/>
+      <text x="420" y="52" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="12" font-weight="700" fill="#1a5fa8">MuleSoft Anypoint Platform</text>
+      <!-- Workday connector -->
+      <rect x="296" y="65" width="110" height="44" rx="6" fill="#fff" stroke="#e2e6ec" stroke-width="1"/>
+      <text x="351" y="83" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">Workday</text>
+      <text x="351" y="99" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Connector</text>
+      <line x1="408" y1="87" x2="424" y2="87" stroke="#5a6475" stroke-width="1.5" marker-end="url(#a1)"/>
+      <!-- Transform -->
+      <rect x="426" y="58" width="118" height="58" rx="6" fill="#1a5fa8"/>
+      <text x="485" y="79" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" font-weight="700" fill="#fff">Transform</text>
+      <text x="485" y="95" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#a8c8f0">Message</text>
+      <text x="485" y="108" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#7bb3e0">(DataWeave)</text>
+      <!-- DataWeave label -->
+      <rect x="296" y="145" width="248" height="44" rx="6" fill="#f0fdf4" stroke="#15803d" stroke-width="1"/>
+      <text x="420" y="164" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" font-weight="700" fill="#15803d">DataWeave 2.0</text>
+      <text x="420" y="181" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#166534">XML parsing + Field mapping + Null handling</text>
+      <!-- SF connector -->
+      <rect x="296" y="205" width="110" height="34" rx="6" fill="#fff" stroke="#e2e6ec" stroke-width="1"/>
+      <text x="351" y="227" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">Salesforce Upsert</text>
+      <line x1="562" y1="135" x2="598" y2="135" stroke="#1a5fa8" stroke-width="2" marker-end="url(#a1)"/>
+      <text x="580" y="125" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#5a6475">JSON</text>
+      <!-- Salesforce -->
+      <rect x="600" y="60" width="130" height="150" rx="8" fill="#e8f1fb" stroke="#1a5fa8" stroke-width="1.5"/>
+      <rect x="600" y="60" width="130" height="32" rx="8" fill="#1a5fa8"/>
+      <rect x="600" y="78" width="130" height="14" fill="#1a5fa8"/>
+      <text x="665" y="81" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="13" font-weight="700" fill="#fff">Salesforce</text>
+      <text x="665" y="112" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#1e3a5f">Contact / User</text>
+      <text x="665" y="129" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#1e3a5f">EmployeeID__c</text>
+      <text x="665" y="146" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#1e3a5f">Department__c</text>
+      <text x="665" y="163" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#1e3a5f">Position__c</text>
+      <text x="665" y="180" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#1e3a5f">IsActive__c</text>
+      <!-- Legend -->
+      <rect x="10" y="230" width="12" height="12" fill="#c2410c" rx="2"/>
+      <text x="28" y="240" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Workday (SOAP XML)</text>
+      <rect x="190" y="230" width="12" height="12" fill="#1a5fa8" rx="2"/>
+      <text x="208" y="240" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Salesforce (JSON)</text>
+      <rect x="360" y="230" width="12" height="12" fill="#15803d" rx="2"/>
+      <text x="378" y="240" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">DataWeave transformation</text>
+    </svg>
+  </div>
+
+  <h2 id="workday-payload">3. The Workday XML payload structure</h2>
+  <p>This is what the Workday SOAP response actually looks like when you call the Get_Workers operation. Everything is namespaced with <code>wd:</code> and deeply nested. Most developers see this for the first time and immediately reach for a coffee.</p>
+
+  <pre><code>&lt;wd:Worker&gt;
+  &lt;wd:Worker_Reference&gt;
+    &lt;wd:ID wd:type="Employee_ID"&gt;EMP-10045&lt;/wd:ID&gt;
+  &lt;/wd:Worker_Reference&gt;
+  &lt;wd:Worker_Data&gt;
+    &lt;wd:Personal_Data&gt;
+      &lt;wd:Name_Data&gt;
+        &lt;wd:Legal_Name_Data&gt;
+          &lt;wd:Name_Detail_Data&gt;
+            &lt;wd:First_Name&gt;Sarah&lt;/wd:First_Name&gt;
+            &lt;wd:Last_Name&gt;Mitchell&lt;/wd:Last_Name&gt;
+          &lt;/wd:Name_Detail_Data&gt;
+        &lt;/wd:Legal_Name_Data&gt;
+      &lt;/wd:Name_Data&gt;
+      &lt;wd:Contact_Data&gt;
+        &lt;wd:Email_Address_Data&gt;
+          &lt;wd:Email_Address&gt;sarah.mitchell@company.com&lt;/wd:Email_Address&gt;
+        &lt;/wd:Email_Address_Data&gt;
+      &lt;/wd:Contact_Data&gt;
+    &lt;/wd:Personal_Data&gt;
+    &lt;wd:Employment_Data&gt;
+      &lt;wd:Worker_Job_Data&gt;
+        &lt;wd:Position_Data&gt;
+          &lt;wd:Position_Title&gt;Senior Integration Architect&lt;/wd:Position_Title&gt;
+          &lt;wd:Start_Date&gt;2022-03-14&lt;/wd:Start_Date&gt;
+        &lt;/wd:Position_Data&gt;
+        &lt;wd:Business_Site_Summary_Data&gt;
+          &lt;wd:Name&gt;Melbourne AU&lt;/wd:Name&gt;
+        &lt;/wd:Business_Site_Summary_Data&gt;
+      &lt;/wd:Worker_Job_Data&gt;
+      &lt;wd:Worker_Status_Data&gt;
+        &lt;wd:Active&gt;1&lt;/wd:Active&gt;
+        &lt;wd:Hire_Date&gt;2022-03-14&lt;/wd:Hire_Date&gt;
+        &lt;wd:Termination_Date&gt;&lt;/wd:Termination_Date&gt;
+      &lt;/wd:Worker_Status_Data&gt;
+    &lt;/wd:Employment_Data&gt;
+    &lt;wd:Organization_Data&gt;
+      &lt;wd:Worker_Organization_Data&gt;
+        &lt;wd:Organization_Data&gt;
+          &lt;wd:Organization_Name&gt;Integration Platform Team&lt;/wd:Organization_Name&gt;
+          &lt;wd:Organization_Type_Reference&gt;
+            &lt;wd:ID wd:type="Organization_Type_ID"&gt;DEPARTMENT&lt;/wd:ID&gt;
+          &lt;/wd:Organization_Type_Reference&gt;
+        &lt;/wd:Organization_Data&gt;
+      &lt;/wd:Worker_Organization_Data&gt;
+    &lt;/wd:Organization_Data&gt;
+  &lt;/wd:Worker_Data&gt;
+&lt;/wd:Worker&gt;</code></pre>
+
+  <div class="callout warning">
+    <div class="callout-title">The namespace problem</div>
+    Every Workday field is prefixed with <code>wd:</code>. In DataWeave you access namespaced XML fields using the namespace declaration at the top of your script. Miss this and you get null on every field. This trips up most developers the first time.
+  </div>
+
+  <div class="dwforge-banner">
+    <div class="dwforge-banner-text">
+      <h3>Paste your Workday XML into DWForge</h3>
+      <p>DWForge reads your actual payload structure and generates the correct DataWeave with namespace handling already applied. What takes a developer 2 hours to figure out takes DWForge 10 seconds.</p>
+    </div>
+    <a href="../tool.html" class="dwforge-banner-btn">Try it free</a>
+  </div>
+
+  <h2 id="salesforce-target">4. What Salesforce expects</h2>
+  <p>Salesforce wants flat JSON. Clean field names. No namespaces. No nesting beyond what the object model requires.</p>
+
+  <pre><code>{
+  "EmployeeID__c": "EMP-10045",
+  "FirstName": "Sarah",
+  "LastName": "Mitchell",
+  "Email": "sarah.mitchell@company.com",
+  "Title": "Senior Integration Architect",
+  "Department__c": "Integration Platform Team",
+  "Location__c": "Melbourne AU",
+  "IsActive__c": true,
+  "HireDate__c": "2022-03-14",
+  "TerminationDate__c": null,
+  "StartDate__c": "2022-03-14"
+}</code></pre>
+
+  <h2 id="field-mapping">5. Field mapping reference</h2>
+  <p>Every field mapped from the Workday XML path to the Salesforce target field. This took real delivery experience to get right. The paths are long and the nesting is deep.</p>
+
+  <div class="diagram-wrap">
+    <div class="diagram-title">Field Mapping: Workday XML to Salesforce JSON</div>
+    <svg width="100%" viewBox="0 0 740 400" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="mb" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a5fa8" stroke-width="1.5" stroke-linecap="round"/></marker>
+        <marker id="mr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#c2410c" stroke-width="1.5" stroke-linecap="round"/></marker>
+        <marker id="mg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#15803d" stroke-width="1.5" stroke-linecap="round"/></marker>
+      </defs>
+      <rect x="10" y="10" width="330" height="32" rx="6" fill="#c2410c"/>
+      <text x="175" y="31" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="13" font-weight="700" fill="#fff">Workday XML Path</text>
+      <rect x="400" y="10" width="330" height="32" rx="6" fill="#1a5fa8"/>
+      <text x="565" y="31" text-anchor="middle" font-family="Calibri,Arial,sans-serif" font-size="13" font-weight="700" fill="#fff">Salesforce Field</text>
+      <!-- Row 1 -->
+      <rect x="10" y="54" width="330" height="36" rx="4" fill="#fff7ed" stroke="#fcd9bd" stroke-width="0.5"/>
+      <text x="25" y="68" font-family="Calibri,Arial,sans-serif" font-size="10" font-weight="700" fill="#7c2d12">wd:Worker_Reference.wd:ID</text>
+      <text x="25" y="83" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#5a6475">where type="Employee_ID"</text>
+      <rect x="400" y="54" width="330" height="36" rx="4" fill="#e8f1fb" stroke="#b8d4f0" stroke-width="0.5"/>
+      <text x="415" y="68" font-family="Calibri,Arial,sans-serif" font-size="12" font-weight="700" fill="#1e3a5f">EmployeeID__c</text>
+      <text x="415" y="83" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Unique key for upsert</text>
+      <line x1="342" y1="72" x2="398" y2="72" stroke="#1a5fa8" stroke-width="1.5" marker-end="url(#mb)"/>
+      <!-- Row 2 -->
+      <rect x="10" y="100" width="330" height="36" rx="4" fill="#fff7ed" stroke="#fcd9bd" stroke-width="0.5"/>
+      <text x="25" y="114" font-family="Calibri,Arial,sans-serif" font-size="10" font-weight="700" fill="#7c2d12">wd:Personal_Data.wd:Name_Data...</text>
+      <text x="25" y="129" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#5a6475">wd:First_Name</text>
+      <rect x="400" y="100" width="330" height="36" rx="4" fill="#e8f1fb" stroke="#b8d4f0" stroke-width="0.5"/>
+      <text x="415" y="114" font-family="Calibri,Arial,sans-serif" font-size="12" font-weight="700" fill="#1e3a5f">FirstName</text>
+      <text x="415" y="129" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Standard field</text>
+      <line x1="342" y1="118" x2="398" y2="118" stroke="#1a5fa8" stroke-width="1.5" marker-end="url(#mb)"/>
+      <!-- Row 3 -->
+      <rect x="10" y="146" width="330" height="36" rx="4" fill="#fff7ed" stroke="#fcd9bd" stroke-width="0.5"/>
+      <text x="25" y="160" font-family="Calibri,Arial,sans-serif" font-size="10" font-weight="700" fill="#7c2d12">wd:Employment_Data.wd:Worker_Job_Data</text>
+      <text x="25" y="175" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#5a6475">wd:Position_Data.wd:Position_Title</text>
+      <rect x="400" y="146" width="330" height="36" rx="4" fill="#e8f1fb" stroke="#b8d4f0" stroke-width="0.5"/>
+      <text x="415" y="160" font-family="Calibri,Arial,sans-serif" font-size="12" font-weight="700" fill="#1e3a5f">Title</text>
+      <text x="415" y="175" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Standard field</text>
+      <line x1="342" y1="164" x2="398" y2="164" stroke="#1a5fa8" stroke-width="1.5" marker-end="url(#mb)"/>
+      <!-- Row 4 -->
+      <rect x="10" y="192" width="330" height="36" rx="4" fill="#fff7ed" stroke="#fcd9bd" stroke-width="0.5"/>
+      <text x="25" y="206" font-family="Calibri,Arial,sans-serif" font-size="10" font-weight="700" fill="#7c2d12">wd:Worker_Status_Data.wd:Active</text>
+      <text x="25" y="221" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#15803d">Returns "1" or "0" — needs conversion</text>
+      <rect x="400" y="192" width="330" height="36" rx="4" fill="#e8f1fb" stroke="#b8d4f0" stroke-width="0.5"/>
+      <text x="415" y="206" font-family="Calibri,Arial,sans-serif" font-size="12" font-weight="700" fill="#1e3a5f">IsActive__c</text>
+      <text x="415" y="221" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#15803d">Boolean — true/false</text>
+      <line x1="342" y1="210" x2="398" y2="210" stroke="#15803d" stroke-width="1.5" marker-end="url(#mg)"/>
+      <!-- Row 5 -->
+      <rect x="10" y="238" width="330" height="36" rx="4" fill="#fff7ed" stroke="#fcd9bd" stroke-width="0.5"/>
+      <text x="25" y="252" font-family="Calibri,Arial,sans-serif" font-size="10" font-weight="700" fill="#7c2d12">wd:Worker_Status_Data.wd:Termination_Date</text>
+      <text x="25" y="267" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#c2410c">Can be empty — null handling required</text>
+      <rect x="400" y="238" width="330" height="36" rx="4" fill="#e8f1fb" stroke="#b8d4f0" stroke-width="0.5"/>
+      <text x="415" y="252" font-family="Calibri,Arial,sans-serif" font-size="12" font-weight="700" fill="#1e3a5f">TerminationDate__c</text>
+      <text x="415" y="267" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Null if still active</text>
+      <line x1="342" y1="256" x2="398" y2="256" stroke="#c2410c" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#mr)"/>
+      <!-- Row 6 -->
+      <rect x="10" y="284" width="330" height="36" rx="4" fill="#fff7ed" stroke="#fcd9bd" stroke-width="0.5"/>
+      <text x="25" y="298" font-family="Calibri,Arial,sans-serif" font-size="10" font-weight="700" fill="#7c2d12">wd:Organization_Data...</text>
+      <text x="25" y="313" font-family="Calibri,Arial,sans-serif" font-size="10" fill="#5a6475">wd:Organization_Name where type=DEPARTMENT</text>
+      <rect x="400" y="284" width="330" height="36" rx="4" fill="#e8f1fb" stroke="#b8d4f0" stroke-width="0.5"/>
+      <text x="415" y="298" font-family="Calibri,Arial,sans-serif" font-size="12" font-weight="700" fill="#1e3a5f">Department__c</text>
+      <text x="415" y="313" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Filter by org type</text>
+      <line x1="342" y1="302" x2="398" y2="302" stroke="#1a5fa8" stroke-width="1.5" marker-end="url(#mb)"/>
+      <!-- Legend -->
+      <line x1="10" y1="350" x2="40" y2="350" stroke="#1a5fa8" stroke-width="1.5"/>
+      <text x="46" y="354" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Direct map</text>
+      <line x1="160" y1="350" x2="190" y2="350" stroke="#c2410c" stroke-width="1.5" stroke-dasharray="4,2"/>
+      <text x="196" y="354" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Null handling required</text>
+      <line x1="370" y1="350" x2="400" y2="350" stroke="#15803d" stroke-width="1.5"/>
+      <text x="406" y="354" font-family="Calibri,Arial,sans-serif" font-size="11" fill="#5a6475">Type conversion required</text>
+    </svg>
+  </div>
+
+  <table class="field-table">
+    <thead><tr><th>Workday XML Path</th><th>Salesforce Field</th><th>Type</th><th>Rule</th></tr></thead>
+    <tbody>
+      <tr><td><code>wd:Worker_Reference.wd:ID</code></td><td><code>EmployeeID__c</code></td><td>String</td><td><span class="badge required">Upsert key</span></td></tr>
+      <tr><td><code>...wd:First_Name</code></td><td><code>FirstName</code></td><td>String</td><td><span class="badge optional">Direct map</span></td></tr>
+      <tr><td><code>...wd:Last_Name</code></td><td><code>LastName</code></td><td>String</td><td><span class="badge optional">Direct map</span></td></tr>
+      <tr><td><code>...wd:Email_Address</code></td><td><code>Email</code></td><td>String</td><td><span class="badge optional">Direct map</span></td></tr>
+      <tr><td><code>...wd:Position_Title</code></td><td><code>Title</code></td><td>String</td><td><span class="badge optional">Direct map</span></td></tr>
+      <tr><td><code>...wd:Organization_Name</code></td><td><code>Department__c</code></td><td>String</td><td><span class="badge transform">Filter by type</span></td></tr>
+      <tr><td><code>...wd:Active</code></td><td><code>IsActive__c</code></td><td>Boolean</td><td><span class="badge transform">1/0 to true/false</span></td></tr>
+      <tr><td><code>...wd:Hire_Date</code></td><td><code>HireDate__c</code></td><td>Date</td><td><span class="badge optional">Direct map</span></td></tr>
+      <tr><td><code>...wd:Termination_Date</code></td><td><code>TerminationDate__c</code></td><td>Date</td><td><span class="badge required">Null if empty</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="xml-to-json">6. XML to JSON in DataWeave</h2>
+  <p>The first thing you need is the namespace declaration. Without this every <code>wd:</code> field returns null and you spend an hour debugging something that should take two minutes.</p>
+
+  <pre><code>%dw 2.0
+output application/json
+ns wd http://workday.com/ns/bsvc/v40
+---
+// Now you can access Workday fields using the wd namespace
+{
+  EmployeeID__c: payload.wd#Worker.wd#Worker_Reference
+    .wd#ID."#content" default ""
+}</code></pre>
+
+  <div class="callout warning">
+    <div class="callout-title">The namespace URL matters</div>
+    The Workday namespace URL changes with API version. <code>v40</code> above is an example. Check your actual Workday SOAP response for the correct namespace URL and match it exactly in your DataWeave script. A single character difference and every field returns null.
+  </div>
+
+  <div class="callout dwforge">
+    <div class="callout-title">DWForge handles namespaces automatically</div>
+    Paste your actual Workday XML payload into <a href="../tool.html" style="color:var(--purple);font-weight:700">DWForge</a>. It reads the namespace from your payload and generates the correct declaration automatically. No manual namespace hunting. No version mismatches. Done in seconds.
+  </div>
+
+  <h2 id="null-handling">7. Null handling for HR fields</h2>
+  <p>HR data is the messiest data in any enterprise. Fields that should always exist sometimes do not. Optional fields return empty strings instead of null. Workday Active field returns "1" or "0" as a string, not a boolean.</p>
+
+  <h3>Converting Active status to boolean</h3>
+  <pre><code>IsActive__c: payload.wd#Worker.wd#Worker_Data
+  .wd#Employment_Data.wd#Worker_Status_Data.wd#Active == "1"</code></pre>
+
+  <h3>Handling empty date fields</h3>
+  <p>Workday sometimes returns an empty element for Termination_Date on active employees. You need to check for both null and empty string.</p>
+  <pre><code>var terminationDateRaw = payload.wd#Worker.wd#Worker_Data
+  .wd#Employment_Data.wd#Worker_Status_Data.wd#Termination_Date
+---
+{
+  TerminationDate__c: if (terminationDateRaw != null and
+    terminationDateRaw != "")
+    terminationDateRaw as String
+  else null
+}</code></pre>
+
+  <h3>Defaulting missing strings</h3>
+  <pre><code>Title: payload.wd#Worker.wd#Worker_Data.wd#Employment_Data
+  .wd#Worker_Job_Data.wd#Position_Data.wd#Position_Title default ""</code></pre>
+
+  <div class="callout dwforge">
+    <div class="callout-title">DWForge writes all null handling for you</div>
+    Tell <a href="../tool.html" style="color:var(--purple);font-weight:700">DWForge</a> which fields can be null and what to do when they are. It generates the correct DataWeave pattern for every case. Empty string check, boolean conversion, null default — all handled in seconds.
+  </div>
+
+  <h2 id="terminated">8. Handling terminated employees</h2>
+  <p>Terminated employee records need different handling. When Workday sends a termination the DataWeave needs to set IsActive__c to false and capture the termination date. Some teams also need to deactivate the Salesforce user record.</p>
+
+  <pre><code>%dw 2.0
+output application/json
+ns wd http://workday.com/ns/bsvc/v40
+var worker = payload.wd#Worker.wd#Worker_Data
+var statusData = worker.wd#Employment_Data.wd#Worker_Status_Data
+var isActive = statusData.wd#Active == "1"
+var terminationDate = statusData.wd#Termination_Date
+---
+{
+  IsActive__c: isActive,
+  TerminationDate__c: if (!isActive and terminationDate != null
+    and terminationDate != "")
+    terminationDate as String
+  else null,
+  // Deactivate Salesforce user if terminated
+  IsPortalEnabled: isActive
+}</code></pre>
+
+  <h2 id="batch">9. Batch sync transformation</h2>
+  <p>In a scheduled sync the Workday response contains multiple Worker records inside a <code>Get_Workers_Response</code> wrapper. You need to map over the array.</p>
+
+  <pre><code>%dw 2.0
+output application/json
+ns wd http://workday.com/ns/bsvc/v40
+var workers = payload.wd#Get_Workers_Response
+  .wd#Response_Data.wd#Worker
+---
+workers map (worker) -> do {
+  var data = worker.wd#Worker_Data
+  var personal = data.wd#Personal_Data
+  var nameData = personal.wd#Name_Data
+    .wd#Legal_Name_Data.wd#Name_Detail_Data
+  var employment = data.wd#Employment_Data
+  var jobData = employment.wd#Worker_Job_Data
+  var statusData = employment.wd#Worker_Status_Data
+  var orgData = data.wd#Organization_Data
+    .wd#Worker_Organization_Data filter (org) ->
+    (org.wd#Organization_Data.wd#Organization_Type_Reference
+    .wd#ID == "DEPARTMENT")
+  ---
+  {
+    EmployeeID__c: worker.wd#Worker_Reference.wd#ID."#content" default "",
+    FirstName: nameData.wd#First_Name default "",
+    LastName: nameData.wd#Last_Name default "",
+    Email: personal.wd#Contact_Data.wd#Email_Address_Data
+      .wd#Email_Address default "",
+    Title: jobData.wd#Position_Data.wd#Position_Title default "",
+    Department__c: orgData[0].wd#Organization_Data
+      .wd#Organization_Name default "",
+    Location__c: jobData.wd#Business_Site_Summary_Data.wd#Name default "",
+    IsActive__c: statusData.wd#Active == "1",
+    HireDate__c: statusData.wd#Hire_Date default null,
+    TerminationDate__c: if (statusData.wd#Termination_Date != null
+      and statusData.wd#Termination_Date != "")
+      statusData.wd#Termination_Date as String
+    else null
+  }
+}</code></pre>
+
+  <div class="callout dwforge">
+    <div class="callout-title">This took hours to write manually. DWForge does it in seconds.</div>
+    Paste your Workday XML response into <a href="../tool.html" style="color:var(--purple);font-weight:700">DWForge</a>, select Workday as source and Salesforce as target, tell it your field requirements — and get this complete batch transformation generated automatically. No namespace hunting. No path errors. No null handling gaps. <a href="../tool.html" style="color:var(--purple);font-weight:700">Try it free.</a>
+  </div>
+
+  <h2 id="complete">10. Complete production DataWeave</h2>
+  <p>The complete single-record transformation. All null handling applied, boolean conversion, terminated employee logic, and namespace declaration correct. This is what <a href="../tool.html" style="font-weight:700">DWForge generates automatically</a> when you describe a Workday to Salesforce transformation.</p>
+
+  <pre><code>%dw 2.0
+output application/json
+ns wd http://workday.com/ns/bsvc/v40
+var data = payload.wd#Worker.wd#Worker_Data
+var personal = data.wd#Personal_Data
+var nameData = personal.wd#Name_Data
+  .wd#Legal_Name_Data.wd#Name_Detail_Data
+var employment = data.wd#Employment_Data
+var jobData = employment.wd#Worker_Job_Data
+var statusData = employment.wd#Worker_Status_Data
+var orgData = data.wd#Organization_Data
+  .wd#Worker_Organization_Data filter (org) ->
+  (org.wd#Organization_Data.wd#Organization_Type_Reference
+  .wd#ID == "DEPARTMENT")
+var isActive = statusData.wd#Active == "1"
+---
+{
+  EmployeeID__c: payload.wd#Worker.wd#Worker_Reference
+    .wd#ID."#content" default "",
+  FirstName: nameData.wd#First_Name default "",
+  LastName: nameData.wd#Last_Name default "",
+  Email: personal.wd#Contact_Data.wd#Email_Address_Data
+    .wd#Email_Address default "",
+  Title: jobData.wd#Position_Data.wd#Position_Title default "",
+  Department__c: orgData[0].wd#Organization_Data
+    .wd#Organization_Name default "",
+  Location__c: jobData.wd#Business_Site_Summary_Data
+    .wd#Name default "",
+  IsActive__c: isActive,
+  HireDate__c: statusData.wd#Hire_Date default null,
+  TerminationDate__c: if (!isActive and
+    statusData.wd#Termination_Date != null and
+    statusData.wd#Termination_Date != "")
+    statusData.wd#Termination_Date as String
+  else null,
+  StartDate__c: jobData.wd#Position_Data.wd#Start_Date default null
+}</code></pre>
+
+  <h2 id="testing">11. Testing your transformation</h2>
+  <p>We tested this exact transformation ourselves. Here is what it looks like end to end.</p>
+
+  <p><strong>Step 1.</strong> Paste your Workday XML and expected Salesforce output into DWForge. Select Workday as source and Salesforce as target. Click Generate. Done in seconds.</p>
+
+  <div style="margin:1.5rem 0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+    <img src="dwforge-workday-generated.png" alt="DWForge generating Workday to Salesforce DataWeave" style="width:100%;display:block"/>
+    <div style="padding:8px 14px;background:var(--bg-secondary);font-size:12px;color:var(--text-muted)">DWForge generates the complete DataWeave in seconds. Source: Workday. Target: Salesforce. Ready to paste.</div>
+  </div>
+
+  <p><strong>Step 2.</strong> Copy the generated code and paste into the DataWeave Playground at <a href="https://dataweave.mulesoft.com/learn/dataweave" target="_blank">dataweave.mulesoft.com</a> with your Workday XML. The output is exactly what Salesforce expects.</p>
+
+  <div style="margin:1.5rem 0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+    <img src="dwforge-workday-playground.png" alt="DataWeave Playground showing correct Workday to Salesforce output" style="width:100%;display:block"/>
+    <div style="padding:8px 14px;background:var(--bg-secondary);font-size:12px;color:var(--text-muted)">DataWeave Playground output. EmployeeID, FirstName, LastName, IsActive as boolean, HireDate all correct. Compiles first time. No edits needed.</div>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-title">Testing tip</div>
+    Use a real Workday record from your sandbox environment as your test payload. Synthetic data misses edge cases. Real data surfaces the nulls, the empty strings, and the terminated employees that break production code.
+  </div>
+
+  <div class="callout success">
+    <div class="callout-title">DWForge generates and validates this entire transformation</div>
+    Every pattern in this article including the namespace handling, the boolean conversion, the terminated employee logic, and the batch map is built into <a href="../tool.html" style="color:var(--green);font-weight:700">DWForge</a>. Paste your Workday payload and describe your Salesforce fields. Get the complete production DataWeave in seconds. Test it in the playground. Paste it into Studio. Ship it. <a href="../tool.html" style="color:var(--green);font-weight:700">Try DWForge free at dwforge.vercel.app</a>
+  </div>
+
+  <div class="cta-box">
+    <h3>Generate this DataWeave now. In seconds.</h3>
+    <p>Paste your Workday XML payload, pick Salesforce as target, and describe your field requirements. DWForge writes the complete production transformation including namespace handling, null safety, boolean conversion, and terminated employee logic. Free. No signup.</p>
+    <a href="../tool.html">Write my DataWeave free</a>
+  </div>
+
+  <div class="related">
+    <h3>More guides</h3>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <a href="salesforce-to-sap-dataweave.html" style="font-size:14px">Salesforce to SAP DataWeave: Complete Production Guide</a>
+      <a href="../index.html" style="font-size:14px">Back to DWForge home</a>
+      <a href="../tool.html" style="font-size:14px">Generate DataWeave for your transformation</a>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>© 2026 DWForge. Data Work, forged for production.</p>
+  <p style="margin-top:6px">All product names and trademarks are property of their respective owners. DWForge is not affiliated with Workday, Salesforce, or MuleSoft.</p>
+</footer>
+
+</body>
+</html>
