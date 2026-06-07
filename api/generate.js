@@ -263,28 +263,32 @@ Then write 2-3 plain English sentences: what the transformation does, key decisi
 
 const MULE_PROJECT_SYSTEM_PROMPT = `You are a senior MuleSoft architect generating complete, production-ready Mule 4.6 projects for CloudHub 2.0.
 
-OUTPUT RULES — CRITICAL:
-- Return ONLY a valid JSON object. Nothing before it, nothing after it.
-- No markdown, no code fences, no explanation outside the JSON.
-- All file contents are strings inside the JSON object.
-- Escape all double quotes inside file contents as \\".
-- Escape all backslashes as \\\\.
-- Newlines inside file content strings must be \\n.
+OUTPUT FORMAT — use exactly this format, nothing else before or after:
 
-JSON STRUCTURE:
-{
-  "projectName": "string",
-  "files": {
-    "src/main/mule/{appname}-main.xml": "...",
-    "src/main/mule/{appname}-error-handler.xml": "...",
-    "src/main/mule/{appname}-common.xml": "...",
-    "src/main/resources/application.yaml": "...",
-    "src/main/resources/log4j2.xml": "...",
-    "src/test/munit/{appname}-test-suite.xml": "...",
-    "pom.xml": "...",
-    "README.md": "..."
-  }
-}
+===PROJECT: {projectName}===
+===FILE: src/main/mule/{appname}-main.xml===
+[full file content here]
+===FILE: src/main/mule/{appname}-error-handler.xml===
+[full file content here]
+===FILE: src/main/mule/{appname}-common.xml===
+[full file content here]
+===FILE: src/main/resources/application.yaml===
+[full file content here]
+===FILE: src/main/resources/log4j2.xml===
+[full file content here]
+===FILE: src/test/munit/{appname}-test-suite.xml===
+[full file content here]
+===FILE: pom.xml===
+[full file content here]
+===FILE: README.md===
+[full file content here]
+===END===
+
+Rules:
+- Write actual complete file content between each ===FILE=== marker
+- No markdown, no code fences, no backticks anywhere
+- No explanation text outside the markers
+- File content starts immediately after the ===FILE: path=== line
 
 MULE 4.6 CLOUDhub 2.0 REQUIREMENTS:
 
@@ -413,12 +417,29 @@ export default async function handler(req, res) {
       const data = await response.json();
       const rawText = (data.content || []).map(b => b.text || '').join('');
 
+      // Parse delimiter format — no JSON escaping issues
       let projectData;
       try {
-        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        projectData = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+        const projectMatch = rawText.match(/===PROJECT:\s*([^\n=]+)===/);
+        const projectName = projectMatch ? projectMatch[1].trim() : cleanAppName + '-integration';
+
+        const files = {};
+        const fileRegex = /===FILE:\s*([^\n=]+)===\n([\s\S]*?)(?====FILE:|===END===|$)/g;
+        let match;
+        while ((match = fileRegex.exec(rawText)) !== null) {
+          const filePath = match[1].trim();
+          const fileContent = match[2].trim();
+          if (filePath && fileContent) files[filePath] = fileContent;
+        }
+
+        if (Object.keys(files).length === 0) {
+          console.error('No files parsed from response. Raw:', rawText.substring(0, 800));
+          return res.status(500).json({ error: 'Project generation failed. Please try again.' });
+        }
+
+        projectData = { projectName, files };
       } catch (e) {
-        console.error('JSON parse error for mule-project:', e.message, rawText.substring(0, 500));
+        console.error('Parse error for mule-project:', e.message);
         return res.status(500).json({ error: 'Project generation failed. Please try again.' });
       }
 
