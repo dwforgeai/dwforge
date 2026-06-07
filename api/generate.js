@@ -261,25 +261,16 @@ RULE 9: Code must compile and run in MuleSoft DataWeave Playground without modif
 After the complete DataWeave code, write exactly "EXPLANATION:" on a new line.
 Then write 2-3 plain English sentences: what the transformation does, key decisions made, and one thing to verify before deploying.`;
 
-const MULE_PROJECT_SYSTEM_PROMPT = `You are a senior MuleSoft architect. Generate a production-ready Mule 4.6 project.
+const MULE_PROJECT_SYSTEM_PROMPT = `You are a senior MuleSoft architect. Generate only the main Mule 4.6 flow XML.
 
-OUTPUT FORMAT — use this exactly, no other text:
+Use ONLY this format:
 
 ===PROJECT: {appname}-integration===
 ===FILE: src/main/mule/{appname}-main.xml===
-[complete XML file content]
-===FILE: pom.xml===
-[complete pom.xml content]
-===FILE: src/main/resources/application.yaml===
-[complete yaml content]
+[complete Mule 4.6 XML here]
 ===END===
 
-RULES:
-- First line must be ===PROJECT:
-- Replace {appname} with the actual app name
-- Write real complete file content, not placeholders
-- No markdown, no backticks, no explanation outside the markers
-- Last line must be ===END===
+Replace {appname} with the actual app name. One file only. No markdown. No backticks.
 
 MULE 4.6 CLOUDhub 2.0 REQUIREMENTS:
 
@@ -429,6 +420,96 @@ export default async function handler(req, res) {
         }
 
         projectData = { projectName, files };
+
+        // Build static files — no LLM needed, always the same structure
+        const connDeps = connectorDeps.map(d =>
+          `    <dependency>\n      <groupId>${d.groupId}</groupId>\n      <artifactId>${d.artifactId}</artifactId>\n      <version>${d.version}</version>\n      <classifier>mule-plugin</classifier>\n    </dependency>`
+        ).join('\n');
+
+        files['pom.xml'] = [
+          '<?xml version="1.0" encoding="UTF-8"?>',
+          '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+          '         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">',
+          '  <modelVersion>4.0.0</modelVersion>',
+          '  <groupId>com.dwforge</groupId>',
+          '  <artifactId>' + cleanAppName + '-integration</artifactId>',
+          '  <version>1.0.0</version>',
+          '  <packaging>mule-application</packaging>',
+          '  <properties>',
+          '    <app.runtime>4.6.0</app.runtime>',
+          '    <mule.maven.plugin.version>4.1.1</mule.maven.plugin.version>',
+          '  </properties>',
+          '  <dependencies>',
+          connDeps,
+          '  </dependencies>',
+          '  <build>',
+          '    <plugins>',
+          '      <plugin>',
+          '        <groupId>org.mule.tools.maven</groupId>',
+          '        <artifactId>mule-maven-plugin</artifactId>',
+          '        <version>${mule.maven.plugin.version}</version>',
+          '        <extensions>true</extensions>',
+          '      </plugin>',
+          '    </plugins>',
+          '  </build>',
+          '  <repositories>',
+          '    <repository>',
+          '      <id>anypoint-exchange-v3</id>',
+          '      <url>https://maven.anypoint.mulesoft.com/api/v3/maven</url>',
+          '    </repository>',
+          '    <repository>',
+          '      <id>mulesoft-releases</id>',
+          '      <url>https://repository.mulesoft.org/releases/</url>',
+          '    </repository>',
+          '  </repositories>',
+          '</project>',
+        ].join('\n');
+
+        files['src/main/resources/application.yaml'] = [
+          '# ' + cleanAppName + ' Integration — Application Properties',
+          '# Replace all values before deploying',
+          '',
+          'http:',
+          '  port: "${http.port:8081}"',
+          '',
+          'salesforce:',
+          '  consumerKey: "${salesforce.consumerKey}"',
+          '  keyStorePath: "${salesforce.keyStorePath}"',
+          '  keyStorePassword: "${salesforce.keyStorePassword}"',
+          '  username: "${salesforce.username}"',
+          '  tokenEndpoint: "${salesforce.tokenEndpoint}"',
+          '',
+          'd365:',
+          '  host: "${d365.host}"',
+          '  oauth:',
+          '    clientId: "${d365.oauth.clientId}"',
+          '    clientSecret: "${d365.oauth.clientSecret}"',
+          '    tokenUrl: "${d365.oauth.tokenUrl}"',
+          '    scope: "${d365.oauth.scope}"',
+          '',
+          'alert:',
+          '  webhook:',
+          '    host: "${alert.webhook.host}"',
+          '    path: "${alert.webhook.path}"',
+        ].join('\n');
+
+        files['src/main/resources/log4j2.xml'] = [
+          '<?xml version="1.0" encoding="UTF-8"?>',
+          '<Configuration status="WARN">',
+          '  <Appenders>',
+          '    <Console name="Console" target="SYSTEM_OUT">',
+          '      <PatternLayout pattern="%-5p %d [%t] [event: %X{correlationId}] %c: %m%n"/>',
+          '    </Console>',
+          '  </Appenders>',
+          '  <Loggers>',
+          '    <AsyncLogger name="com.dwforge" level="INFO" additivity="false">',
+          '      <AppenderRef ref="Console"/>',
+          '    </AsyncLogger>',
+          '    <Root level="WARN"><AppenderRef ref="Console"/></Root>',
+          '  </Loggers>',
+          '</Configuration>',
+        ].join('\n');
+
       } catch (e) {
         console.error('Parse error:', e.message);
         return res.status(500).json({ error: 'Project generation failed. Please try again.' });
