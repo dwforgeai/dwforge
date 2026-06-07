@@ -261,80 +261,49 @@ RULE 9: Code must compile and run in MuleSoft DataWeave Playground without modif
 After the complete DataWeave code, write exactly "EXPLANATION:" on a new line.
 Then write 2-3 plain English sentences: what the transformation does, key decisions made, and one thing to verify before deploying.`;
 
-const MULE_PROJECT_SYSTEM_PROMPT = `You are a senior MuleSoft architect. Generate only the main Mule 4.6 flow XML.
+const MULE_PROJECT_SYSTEM_PROMPT = `You are a senior MuleSoft architect following enterprise delivery standards.
+Generate ONLY the main flow XML. Global configs, error subflows, and DWL files are injected separately.
 
 Use ONLY this format:
 
 ===PROJECT: {appname}-integration===
 ===FILE: src/main/mule/{appname}-main.xml===
-[complete Mule 4.6 XML here]
+[complete XML here]
 ===END===
 
-Replace {appname} with the actual app name. One file only. No markdown. No backticks.
+ENTERPRISE STANDARDS — every main flow XML must include:
 
-MULE 4.6 CLOUDhub 2.0 REQUIREMENTS:
+1. Set these variables at flow entry before any logic:
+   <set-variable variableName="transactionId" value="#[correlationId]"/>
+   <set-variable variableName="appName" value="#[p('api.name')]"/>
+   <set-variable variableName="step" value="entry"/>
+   <set-variable variableName="previousError" value="#[null]"/>
 
-XML HEADER (every Mule XML file):
-<?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns:http="http://www.mulesoft.org/schema/mule/http"
-      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-      xsi:schemaLocation="
-        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+2. Update vars.step at each stage: validate-request, transform-request, call-target, transform-response
 
-MAIN FLOW must include:
-- HTTP Listener (realtime) or Scheduler (batch) as source
-- Logger at entry with correlationId
-- Try scope wrapping the core logic
-- Transform Message using ee:transform with CDATA DataWeave
-- Target connector operation
-- Response transform
-- Error handler reference
+3. Reference global configs by name — do NOT redefine in main XML:
+   config-ref="{appname}-http-listener-config"
+   config-ref="{appname}-target-request-config"
 
-ERROR HANDLER XML must include:
-- Global error handler named {appname}-global-error-handler
-- ON_ERROR_CONTINUE for HTTP:NOT_FOUND, HTTP:BAD_REQUEST
-- ON_ERROR_PROPAGATE for CONNECTIVITY, ANY
-- Logger and Set Payload in each handler
-- Email alert component for CONNECTIVITY errors (use http:request to alert webhook)
+4. HTTP Listener response must use vars.httpStatus:
+   <http:response statusCode="#[vars.httpStatus default 200]"/>
+   <http:error-response statusCode="#[vars.httpStatus default 500]"/>
 
-COMMON XML must include:
-- HTTP Listener config with \${http.port}
-- HTTP Request config for target system
-- Global property references
+5. Error handler on every flow calling reusable subflows:
+   <on-error-continue type="CONNECTIVITY,TIMEOUT">
+     <flow-ref name="common-map-technical-error-subflow"/>
+     <set-variable variableName="httpStatus" value="503"/>
+     <async><flow-ref name="common-log-error-subflow"/></async>
+   </on-error-continue>
+   <on-error-continue type="ANY">
+     <flow-ref name="common-map-technical-error-subflow"/>
+     <set-variable variableName="httpStatus" value="500"/>
+     <async><flow-ref name="common-log-error-subflow"/></async>
+   </on-error-continue>
 
-APPLICATION.YAML properties:
-- http.port: 8081
-- All connector credentials as \${property.name} placeholders
-- Environment-specific values as placeholders only — never hardcode credentials
+6. Include a GET /health flow returning {"status":"UP","app":"#[p('api.name')]"}
 
-LOG4J2.XML:
-- Standard Mule 4 log4j2 format
-- INFO level for the app package
-- Rolling file appender
-
-MUNIT TEST SUITE:
-- Suite name matches main flow
-- At least 2 test cases: success path and error path
-- Mock the target connector operation
-- Assert response payload and HTTP status
-
-POM.XML:
-- groupId: com.dwforge
-- Mule 4.6.0 runtime
-- mule-maven-plugin 4.1.1
-- CloudHub 2.0 deployment config commented out
-- All required connector dependencies
-
-README.MD:
-- Project overview
-- Prerequisites
-- How to configure application.yaml
-- How to run locally
-- How to deploy to CloudHub 2.0`;
+Replace {appname} with the actual app name. No markdown. No backticks.\`
 
 // ─── HANDLER ─────────────────────────────────────────────────────────────────
 
@@ -421,94 +390,360 @@ export default async function handler(req, res) {
 
         projectData = { projectName, files };
 
-        // Build static files — no LLM needed, always the same structure
+        // ── ENTERPRISE STATIC FILES ──────────────────────────────────────────
         const connDeps = connectorDeps.map(d =>
           `    <dependency>\n      <groupId>${d.groupId}</groupId>\n      <artifactId>${d.artifactId}</artifactId>\n      <version>${d.version}</version>\n      <classifier>mule-plugin</classifier>\n    </dependency>`
         ).join('\n');
 
-        files['pom.xml'] = [
-          '<?xml version="1.0" encoding="UTF-8"?>',
-          '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
-          '         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">',
-          '  <modelVersion>4.0.0</modelVersion>',
-          '  <groupId>com.dwforge</groupId>',
-          '  <artifactId>' + cleanAppName + '-integration</artifactId>',
-          '  <version>1.0.0</version>',
-          '  <packaging>mule-application</packaging>',
-          '  <properties>',
-          '    <app.runtime>4.6.0</app.runtime>',
-          '    <mule.maven.plugin.version>4.1.1</mule.maven.plugin.version>',
-          '  </properties>',
-          '  <dependencies>',
-          connDeps,
-          '  </dependencies>',
-          '  <build>',
-          '    <plugins>',
-          '      <plugin>',
-          '        <groupId>org.mule.tools.maven</groupId>',
-          '        <artifactId>mule-maven-plugin</artifactId>',
-          '        <version>${mule.maven.plugin.version}</version>',
-          '        <extensions>true</extensions>',
-          '      </plugin>',
-          '    </plugins>',
-          '  </build>',
-          '  <repositories>',
-          '    <repository>',
-          '      <id>anypoint-exchange-v3</id>',
-          '      <url>https://maven.anypoint.mulesoft.com/api/v3/maven</url>',
-          '    </repository>',
-          '    <repository>',
-          '      <id>mulesoft-releases</id>',
-          '      <url>https://repository.mulesoft.org/releases/</url>',
-          '    </repository>',
-          '  </repositories>',
-          '</project>',
-        ].join('\n');
+        files['mule-artifact.json'] = `{
+  "minMuleVersion": "4.6.0",
+  "secureProperties": [
+    "secure.key",
+    "anypoint.platform.client_id",
+    "anypoint.platform.client_secret"
+  ]
+}`;
 
-        files['src/main/resources/application.yaml'] = [
-          '# ' + cleanAppName + ' Integration — Application Properties',
-          '# Replace all values before deploying',
-          '',
-          'http:',
-          '  port: "${http.port:8081}"',
-          '',
-          'salesforce:',
-          '  consumerKey: "${salesforce.consumerKey}"',
-          '  keyStorePath: "${salesforce.keyStorePath}"',
-          '  keyStorePassword: "${salesforce.keyStorePassword}"',
-          '  username: "${salesforce.username}"',
-          '  tokenEndpoint: "${salesforce.tokenEndpoint}"',
-          '',
-          'd365:',
-          '  host: "${d365.host}"',
-          '  oauth:',
-          '    clientId: "${d365.oauth.clientId}"',
-          '    clientSecret: "${d365.oauth.clientSecret}"',
-          '    tokenUrl: "${d365.oauth.tokenUrl}"',
-          '    scope: "${d365.oauth.scope}"',
-          '',
-          'alert:',
-          '  webhook:',
-          '    host: "${alert.webhook.host}"',
-          '    path: "${alert.webhook.path}"',
-        ].join('\n');
+        files['src/main/mule/common-error-handler.xml'] = `<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
 
-        files['src/main/resources/log4j2.xml'] = [
-          '<?xml version="1.0" encoding="UTF-8"?>',
-          '<Configuration status="WARN">',
-          '  <Appenders>',
-          '    <Console name="Console" target="SYSTEM_OUT">',
-          '      <PatternLayout pattern="%-5p %d [%t] [event: %X{correlationId}] %c: %m%n"/>',
-          '    </Console>',
-          '  </Appenders>',
-          '  <Loggers>',
-          '    <AsyncLogger name="com.dwforge" level="INFO" additivity="false">',
-          '      <AppenderRef ref="Console"/>',
-          '    </AsyncLogger>',
-          '    <Root level="WARN"><AppenderRef ref="Console"/></Root>',
-          '  </Loggers>',
-          '</Configuration>',
-        ].join('\n');
+    <!-- Maps a technical error (connectivity, system failure) to standard response format -->
+    <sub-flow name="common-map-technical-error-subflow" doc:name="Map Technical Error">
+        <ee:transform doc:name="set-technical-error-payload">
+            <ee:message>
+                <ee:set-payload resource="dw/set-technical-error-payload.dwl"/>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable variableName="previousError"><![CDATA[%dw 2.0 output application/java --- payload]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </sub-flow>
+
+    <!-- Maps a functional error (bad request, business validation) to standard response format -->
+    <sub-flow name="common-map-functional-error-subflow" doc:name="Map Functional Error">
+        <ee:transform doc:name="set-functional-error-payload">
+            <ee:message>
+                <ee:set-payload resource="dw/set-functional-error-payload.dwl"/>
+            </ee:message>
+            <ee:variables>
+                <ee:set-variable variableName="previousError"><![CDATA[%dw 2.0 output application/java --- payload]]></ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+    </sub-flow>
+
+    <!-- Logs error asynchronously — call inside <async> to never delay response -->
+    <sub-flow name="common-log-error-subflow" doc:name="Log Error">
+        <ee:transform doc:name="build-error-log-payload">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    (transactionId: vars.transactionId)   if (vars.transactionId?),
+    level:       "ERROR",
+    serviceName: vars.appName default "",
+    (step:       vars.step)               if (vars.step?),
+    status:      "ERROR",
+    timestamp:   now() as String {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    error: {
+        (code:    vars.httpStatus as String) if (vars.httpStatus?),
+        type:     error.errorType.identifier default "UNKNOWN",
+        message:  error.description default "No description"
+    },
+    payload: payload
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <logger level="ERROR"
+            message="#[output application/json --- payload]"
+            doc:name="log-error"/>
+    </sub-flow>
+
+</mule>`;
+
+        files['src/main/mule/global.xml'] = `<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns:os="http://www.mulesoft.org/schema/mule/os"
+      xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+        http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+        http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
+
+    <!-- Environment and properties -->
+    <global-property name="mule.env" value="dev" doc:name="Default environment"/>
+    <configuration-properties file="config/config-\${mule.env}.yaml" doc:name="Environment config"/>
+
+    <secure-properties:config name="Secure_Properties_Config"
+        file="config/config-\${mule.env}.yaml"
+        key="\${secure.key}"
+        doc:name="Secure Properties Config">
+        <secure-properties:encrypt algorithm="Blowfish"/>
+    </secure-properties:config>
+
+    <!-- HTTP Listener -->
+    <http:listener-config name="${cleanAppName}-http-listener-config" doc:name="HTTP Listener Config">
+        <http:listener-connection host="0.0.0.0" port="\${http.port}"/>
+    </http:listener-config>
+
+    <!-- Target system HTTP Request config -->
+    <http:request-config name="${cleanAppName}-target-request-config"
+        doc:name="Target System HTTP Request Config"
+        responseTimeout="\${connections.response.timeout}">
+        <http:request-connection
+            host="\${target.host}"
+            port="\${target.port}"
+            protocol="\${target.protocol}">
+            <reconnection>
+                <reconnect frequency="\${connections.reconn.frequency}" count="\${connections.reconn.attempts}"/>
+            </reconnection>
+        </http:request-connection>
+    </http:request-config>
+
+    <!-- Token caching object store -->
+    <os:object-store name="${cleanAppName}-token-store"
+        doc:name="Token Object Store"
+        maxEntries="1"
+        entryTtl="\${token.store.ttl}"
+        entryTtlUnit="MINUTES"
+        persistent="false"/>
+
+</mule>`;
+
+        files['src/main/resources/config/config-dev.yaml'] = `## Application properties — DEV environment
+api:
+  name: "${cleanAppName}"
+  version: "v1"
+  path: "/api/${cleanAppName}/v1/*"
+
+http:
+  port: "8081"
+
+## Target system connection
+target:
+  host: "${cleanAppName}-target.dev.example.com"
+  port: "443"
+  protocol: "HTTPS"
+
+## Connection pool settings
+connections:
+  response.timeout: "60000"
+  reconn.frequency: "2000"
+  reconn.attempts: "2"
+
+## Token store (minutes)
+token:
+  store.ttl: "55"
+
+## Secure key — set in CloudHub properties, never commit real value
+secure:
+  key: "changeMe-dev"
+`;
+
+        files['src/main/resources/config/config-prod.yaml'] = `## Application properties — PROD environment
+api:
+  name: "${cleanAppName}"
+  version: "v1"
+  path: "/api/${cleanAppName}/v1/*"
+
+http:
+  port: "8081"
+
+## Target system connection
+target:
+  host: "${cleanAppName}-target.prod.example.com"
+  port: "443"
+  protocol: "HTTPS"
+
+## Connection pool settings
+connections:
+  response.timeout: "60000"
+  reconn.frequency: "2000"
+  reconn.attempts: "2"
+
+## Token store (minutes)
+token:
+  store.ttl: "55"
+
+## Secure key — set in CloudHub properties, never commit real value
+secure:
+  key: "changeMe-dev"
+`;
+
+        files['src/main/resources/config/config-sit.yaml'] = `## Application properties — SIT environment
+api:
+  name: "${cleanAppName}"
+  version: "v1"
+  path: "/api/${cleanAppName}/v1/*"
+
+http:
+  port: "8081"
+
+## Target system connection
+target:
+  host: "${cleanAppName}-target.sit.example.com"
+  port: "443"
+  protocol: "HTTPS"
+
+## Connection pool settings
+connections:
+  response.timeout: "60000"
+  reconn.frequency: "2000"
+  reconn.attempts: "2"
+
+## Token store (minutes)
+token:
+  store.ttl: "55"
+
+## Secure key — set in CloudHub properties, never commit real value
+secure:
+  key: "changeMe-dev"
+`;
+
+        files['src/main/resources/config/config-uat.yaml'] = `## Application properties — UAT environment
+api:
+  name: "${cleanAppName}"
+  version: "v1"
+  path: "/api/${cleanAppName}/v1/*"
+
+http:
+  port: "8081"
+
+## Target system connection
+target:
+  host: "${cleanAppName}-target.uat.example.com"
+  port: "443"
+  protocol: "HTTPS"
+
+## Connection pool settings
+connections:
+  response.timeout: "60000"
+  reconn.frequency: "2000"
+  reconn.attempts: "2"
+
+## Token store (minutes)
+token:
+  store.ttl: "55"
+
+## Secure key — set in CloudHub properties, never commit real value
+secure:
+  key: "changeMe-dev"
+`;
+
+        files['src/main/resources/dw/http-status.dwl'] = `%dw 2.0
+output application/java
+var reason = payload.errors[0].reason default ""
+---
+if (payload."type" == "Functional")         422
+else if (contains(reason, "CONNECTIVITY")
+      or contains(reason, "TIMEOUT")
+      or contains(reason, "SERVICE_UNAVAILABLE")
+      or contains(reason, "RETRY_EXHAUSTED"))  503
+else if (contains(reason, "FORBIDDEN"))        403
+else if (contains(reason, "UNAUTHORIZED")
+      or contains(reason, "SECURITY"))         401
+else if (contains(reason, "NOT_FOUND"))        404
+else if (contains(reason, "METHOD_NOT_ALLOWED")) 405
+else if (contains(reason, "BAD_REQUEST"))      400
+else                                           500`;
+
+        files['src/main/resources/dw/set-functional-error-payload.dwl'] = `%dw 2.0
+output application/json
+var errorReason = (error.errorType.namespace default "") ++ ":" ++ (error.errorType.identifier default "")
+---
+if (not isEmpty(vars.previousError))
+{
+    "type":    vars.previousError."type",
+    origin:    vars.previousError.origin,
+    timestamp: vars.previousError.timestamp,
+    errors:    vars.previousError.errors default [] ++ [{ reason: errorReason, message: error.description }],
+    data:      if (not isEmpty(vars.previousError.data)) vars.previousError.data else payload
+}
+else
+{
+    "type":    "Functional",
+    origin:    vars.appName default "",
+    timestamp: now() as LocalDateTime {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    errors:    [{ reason: errorReason, message: error.description }],
+    data:      payload
+}`;
+
+        files['src/main/resources/dw/set-technical-error-payload.dwl'] = `%dw 2.0
+output application/json
+var errorReason = (error.errorType.namespace default "") ++ ":" ++ (error.errorType.identifier default "")
+---
+if (not isEmpty(vars.previousError))
+{
+    "type":    vars.previousError."type",
+    origin:    vars.previousError.origin,
+    timestamp: vars.previousError.timestamp,
+    errors:    vars.previousError.errors default [] ++ [{ reason: errorReason, message: error.description }],
+    data:      if (not isEmpty(vars.previousError.data)) vars.previousError.data else payload
+}
+else
+{
+    "type":    "Technical",
+    origin:    vars.appName default "",
+    timestamp: now() as LocalDateTime {format: "yyyy-MM-dd'T'HH:mm:ss"},
+    errors:    [{ reason: errorReason, message: error.description }],
+    data:      payload
+}`;
+
+        files['pom.xml'] = `<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.dwforge</groupId>
+  <artifactId>${cleanAppName}-integration</artifactId>
+  <version>1.0.0</version>
+  <packaging>mule-application</packaging>
+  <properties>
+    <app.runtime>4.6.0</app.runtime>
+    <mule.maven.plugin.version>4.1.1</mule.maven.plugin.version>
+  </properties>
+  <dependencies>
+${connDeps}
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.mule.tools.maven</groupId>
+        <artifactId>mule-maven-plugin</artifactId>
+        <version>\${mule.maven.plugin.version}</version>
+        <extensions>true</extensions>
+      </plugin>
+    </plugins>
+  </build>
+  <repositories>
+    <repository><id>anypoint-exchange-v3</id><url>https://maven.anypoint.mulesoft.com/api/v3/maven</url></repository>
+    <repository><id>mulesoft-releases</id><url>https://repository.mulesoft.org/releases/</url></repository>
+  </repositories>
+</project>`;
+
+        files['src/main/resources/log4j2.xml'] = `<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%-5p %d [%t] [txn: %X{transactionId}] [step: %X{step}] %c: %m%n"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <AsyncLogger name="com.dwforge" level="INFO" additivity="false"><AppenderRef ref="Console"/></AsyncLogger>
+    <Root level="WARN"><AppenderRef ref="Console"/></Root>
+  </Loggers>
+</Configuration>`;
 
       } catch (e) {
         console.error('Parse error:', e.message);

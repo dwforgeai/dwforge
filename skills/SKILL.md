@@ -208,3 +208,113 @@ Always use ${property.name} in XML. Values go in application.yaml with ${ENV_VAR
 
 For DataWeave output: code first, then EXPLANATION: on a new line, then 2-3 sentences.
 For Mule project output: valid JSON object only, file paths as keys, contents as strings.
+
+---
+
+## Enterprise project structure — standard for every generated project
+
+Every generated Mule project follows this multi-file structure. No exceptions.
+
+### File layout
+```
+src/main/mule/
+  global.xml                    — all connector configs, secure props, JSON logger
+  {appname}-main.xml            — main flow: listener, router, error handlers only
+  common-error-handler.xml      — reusable error subflows (technical, functional, log)
+
+src/main/resources/
+  dw/
+    set-technical-error-payload.dwl
+    set-functional-error-payload.dwl
+    http-status.dwl
+  config/
+    config-dev.yaml
+    config-uat.yaml
+    config-sit.yaml
+    config-prod.yaml
+  log4j2.xml
+
+pom.xml
+mule-artifact.json
+```
+
+### Standard variables — set at entry of EVERY flow, referenced throughout
+
+```xml
+<set-variable variableName="transactionId" value="#[correlationId]" doc:name="set-transactionId"/>
+<set-variable variableName="appName"       value="#[p('api.name')]"  doc:name="set-appName"/>
+<set-variable variableName="step"          value="entry"             doc:name="set-step"/>
+```
+
+Update `vars.step` as the flow progresses:
+```xml
+<set-variable variableName="step" value="transform-request" doc:name="set-step"/>
+<set-variable variableName="step" value="call-target-system" doc:name="set-step"/>
+<set-variable variableName="step" value="transform-response" doc:name="set-step"/>
+```
+
+### Error response format — two types, same shape
+
+Technical error (connectivity, system failure):
+```json
+{
+  "type": "Technical",
+  "origin": "app-name",
+  "timestamp": "2026-06-07T06:00:00",
+  "errors": [{ "reason": "HTTP:CONNECTIVITY", "message": "Connection refused" }],
+  "data": {}
+}
+```
+
+Functional error (bad request, validation, business rule):
+```json
+{
+  "type": "Functional",
+  "origin": "app-name",
+  "timestamp": "2026-06-07T06:00:00",
+  "errors": [{ "reason": "APIKIT:BAD_REQUEST", "message": "Invalid payload" }],
+  "data": {}
+}
+```
+
+### HTTP status mapping from error type
+- CONNECTIVITY, TIMEOUT, SERVICE_UNAVAILABLE → 503
+- FORBIDDEN → 403
+- UNAUTHORIZED, SECURITY → 401
+- NOT_FOUND → 404
+- METHOD_NOT_ALLOWED → 405
+- BAD_REQUEST, validation failure → 400
+- Functional type → 422
+- ANY other Technical → 500
+
+### previousError accumulation — chained error pattern
+When errors propagate across subflows, each handler checks for an existing error before creating a new one. The DWL files handle this automatically. The main flow must set `vars.previousError = null` at entry:
+```xml
+<set-variable variableName="previousError" value="#[null]" doc:name="set-previousError"/>
+```
+
+### Error handler pattern in every flow
+```xml
+<error-handler>
+  <on-error-continue type="ANY">
+    <flow-ref name="common-map-technical-error-subflow"/>
+    <ee:transform>
+      <ee:variables>
+        <ee:set-variable variableName="httpStatus">
+          <![CDATA[%dw 2.0 output application/java --- readUrl('dw/http-status.dwl', 'application/dw')]]>
+        </ee:set-variable>
+      </ee:variables>
+    </ee:transform>
+    <async>
+      <flow-ref name="common-log-error-subflow"/>
+    </async>
+  </on-error-continue>
+</error-handler>
+```
+
+### Config — per environment, never hardcode
+Load via: `config/config-${mule.env}.yaml`
+Default env: `<global-property name="mule.env" value="dev"/>`
+
+Every config file has the same keys, different values per environment.
+
