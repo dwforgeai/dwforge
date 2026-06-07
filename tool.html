@@ -520,6 +520,8 @@
 </div>
 
 <script>
+const API_SECRET = 'dwf-2026-xK9mQpL3vR7nTz';
+
 function sanitise(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -593,7 +595,10 @@ function stopProgress(success) {
 async function callAPI(prompt) {
   const res = await fetch('/api/generate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-secret': API_SECRET
+    },
     body: JSON.stringify({ prompt })
   });
   if (!res.ok) {
