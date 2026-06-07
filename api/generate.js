@@ -263,32 +263,31 @@ Then write 2-3 plain English sentences: what the transformation does, key decisi
 
 const MULE_PROJECT_SYSTEM_PROMPT = `You are a senior MuleSoft architect generating complete, production-ready Mule 4.6 projects for CloudHub 2.0.
 
-OUTPUT FORMAT — use exactly this format, nothing else before or after:
+OUTPUT FORMAT — MANDATORY. Use exactly this structure. Every character matters.
 
 ===PROJECT: {projectName}===
 ===FILE: src/main/mule/{appname}-main.xml===
-[full file content here]
+[file content]
 ===FILE: src/main/mule/{appname}-error-handler.xml===
-[full file content here]
+[file content]
 ===FILE: src/main/mule/{appname}-common.xml===
-[full file content here]
+[file content]
 ===FILE: src/main/resources/application.yaml===
-[full file content here]
-===FILE: src/main/resources/log4j2.xml===
-[full file content here]
-===FILE: src/test/munit/{appname}-test-suite.xml===
-[full file content here]
+[file content]
 ===FILE: pom.xml===
-[full file content here]
+[file content]
 ===FILE: README.md===
-[full file content here]
+[file content]
 ===END===
 
-Rules:
-- Write actual complete file content between each ===FILE=== marker
-- No markdown, no code fences, no backticks anywhere
-- No explanation text outside the markers
-- File content starts immediately after the ===FILE: path=== line
+STRICT RULES:
+- Start your response with ===PROJECT: on the very first line
+- Replace {projectName} with the actual project name e.g. salesforce-d365-test-integration
+- Replace {appname} with the short app name e.g. salesforce-d365-test
+- Replace [file content] with the actual complete file content
+- Never use markdown code fences or backticks anywhere
+- Never add explanation text outside the === markers
+- The last line must be ===END===
 
 MULE 4.6 CLOUDhub 2.0 REQUIREMENTS:
 
@@ -417,29 +416,37 @@ export default async function handler(req, res) {
       const data = await response.json();
       const rawText = (data.content || []).map(b => b.text || '').join('');
 
-      // Parse delimiter format — no JSON escaping issues
       let projectData;
       try {
+        // Parse delimiter format — robust, no JSON escaping issues
         const projectMatch = rawText.match(/===PROJECT:\s*([^\n=]+)===/);
         const projectName = projectMatch ? projectMatch[1].trim() : cleanAppName + '-integration';
 
         const files = {};
-        const fileRegex = /===FILE:\s*([^\n=]+)===\n([\s\S]*?)(?====FILE:|===END===|$)/g;
-        let match;
-        while ((match = fileRegex.exec(rawText)) !== null) {
-          const filePath = match[1].trim();
-          const fileContent = match[2].trim();
+        // Match ===FILE: path=== then capture everything until next ===FILE: or ===END===
+        const parts = rawText.split(/===FILE:\s*/);
+        for (let i = 1; i < parts.length; i++) {
+          const newlineIdx = parts[i].indexOf('\n');
+          if (newlineIdx === -1) continue;
+          const filePath = parts[i].substring(0, newlineIdx).replace(/===.*$/, '').trim();
+          let fileContent = parts[i].substring(newlineIdx + 1);
+          // Strip trailing ===END=== if present
+          fileContent = fileContent.replace(/\n?===END===.*$/s, '').trim();
           if (filePath && fileContent) files[filePath] = fileContent;
         }
 
         if (Object.keys(files).length === 0) {
-          console.error('No files parsed from response. Raw:', rawText.substring(0, 800));
-          return res.status(500).json({ error: 'Project generation failed. Please try again.' });
+          // Return debug info so we can see what Claude actually returned
+          console.error('No files parsed. First 1000 chars:', rawText.substring(0, 1000));
+          return res.status(500).json({ 
+            error: 'Project generation failed. Please try again.',
+            debug: rawText.substring(0, 500)
+          });
         }
 
         projectData = { projectName, files };
       } catch (e) {
-        console.error('Parse error for mule-project:', e.message);
+        console.error('Parse error:', e.message);
         return res.status(500).json({ error: 'Project generation failed. Please try again.' });
       }
 
