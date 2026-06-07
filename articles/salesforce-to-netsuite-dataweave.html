@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salesforce to NetSuite DataWeave Transformation: Complete Production Guide | DWForge</title>
+  <meta name="description" content="Real field mapping, null handling, date conversion, and working DataWeave code for Salesforce to NetSuite integration via MuleSoft. No theory. Just patterns that work in production.">
+  <link rel="canonical" href="https://dwforge.dev/articles/salesforce-to-netsuite-dataweave.html">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Calibri:wght@400;600;700&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #1a5fa8; --blue-light: #e8f1fb; --blue-dark: #0d3d72;
+      --text: #1a1a1a; --text-muted: #5a6475; --border: #e2e6ec;
+      --bg: #ffffff; --bg-secondary: #f7f9fc; --radius: 8px;
+      --green: #15803d; --green-light: #f0fdf4;
+      --font: 'Calibri', 'Segoe UI', Arial, sans-serif;
+    }
+    body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.65; font-size: 16px; }
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: #fff; position: sticky; top: 0; z-index: 100; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+    .logo-mark { width: 34px; height: 34px; background: var(--blue); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; }
+    .logo-dw { color: var(--blue); }
+    .nav-cta { background: var(--blue); color: #fff; padding: 8px 20px; border-radius: var(--radius); font-weight: 600; font-size: 14px; font-family: var(--font); }
+    .nav-cta:hover { background: var(--blue-dark); text-decoration: none; }
+
+    .article-wrap { max-width: 740px; margin: 0 auto; padding: 3rem 2rem 5rem; }
+
+    .article-tag { font-size: 12px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 1rem; }
+    h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 1rem; }
+    .article-intro { font-size: 1.1rem; color: var(--text-muted); line-height: 1.75; margin-bottom: 1.5rem; }
+
+    .dwforge-cta { background: var(--blue-light); border-left: 4px solid var(--blue); border-radius: 0 var(--radius) var(--radius) 0; padding: 1.25rem 1.5rem; margin: 1.75rem 0; }
+    .dwforge-cta .cta-label { font-size: 11px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+    .dwforge-cta p { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin: 0; }
+    .dwforge-cta a { color: var(--blue); font-weight: 700; }
+
+    .article-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: #8a93a0; padding: 1.25rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 2.5rem; }
+    .meta-dot { width: 3px; height: 3px; background: var(--border); border-radius: 50%; }
+
+    .toc { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 2.5rem; }
+    .toc-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 0.75rem; }
+    .toc ol { padding-left: 1.25rem; }
+    .toc li { font-size: 14px; margin-bottom: 0.4rem; }
+    .toc a { color: var(--blue); }
+
+    h2 { font-size: 1.4rem; font-weight: 700; margin: 2.5rem 0 0.75rem; letter-spacing: -0.01em; }
+    h3 { font-size: 1.1rem; font-weight: 700; margin: 1.75rem 0 0.5rem; }
+    p { margin-bottom: 1rem; }
+    p:last-child { margin-bottom: 0; }
+
+    pre { background: #1e2433; color: #e8eaf0; border-radius: var(--radius); padding: 1.25rem 1.5rem; overflow-x: auto; margin: 1.25rem 0; font-size: 14px; line-height: 1.6; font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
+    code { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 14px; background: #f0f2f5; padding: 2px 6px; border-radius: 3px; color: var(--blue-dark); }
+    pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+    .callout { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.5rem; margin: 1.5rem 0; background: var(--bg-secondary); }
+    .callout.warn { border-color: #f59e0b; background: #fffbeb; }
+    .callout.warn .callout-label { color: #d97706; }
+    .callout.tip { border-color: var(--green); background: var(--green-light); }
+    .callout.tip .callout-label { color: var(--green); }
+    .callout-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.4rem; }
+    .callout p { font-size: 14px; margin: 0; color: var(--text-muted); line-height: 1.65; }
+
+    .field-table { width: 100%; border-collapse: collapse; margin: 1.25rem 0; font-size: 14px; }
+    .field-table th { text-align: left; padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+    .field-table td { padding: 8px 12px; border: 1px solid var(--border); vertical-align: top; }
+    .field-table tr:nth-child(even) td { background: var(--bg-secondary); }
+
+    .screenshot-wrap { margin: 2rem 0; }
+    .screenshot-wrap img { width: 100%; border: 1px solid var(--border); border-radius: var(--radius); display: block; }
+    .screenshot-caption { font-size: 13px; color: var(--text-muted); margin-top: 0.6rem; text-align: center; font-style: italic; }
+
+    .final-cta { background: var(--blue); color: #fff; border-radius: var(--radius); padding: 2.5rem; text-align: center; margin-top: 3rem; }
+    .final-cta h2 { color: #fff; margin-top: 0; font-size: 1.4rem; }
+    .final-cta p { color: rgba(255,255,255,0.8); margin-bottom: 1.5rem; }
+    .btn-white { background: #fff; color: var(--blue); padding: 12px 24px; border-radius: var(--radius); font-size: 15px; font-weight: 700; display: inline-block; font-family: var(--font); }
+    .btn-white:hover { background: #f0f4f8; text-decoration: none; }
+    .final-cta-note { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 0.75rem; margin-bottom: 0; }
+
+    footer { padding: 2rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; font-size: 13px; color: var(--text-muted); }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a { color: var(--text-muted); }
+
+    @media (max-width: 700px) {
+      nav { padding: 0.75rem 1rem; }
+      .article-wrap { padding: 2rem 1.25rem 4rem; }
+      pre { font-size: 13px; padding: 1rem; }
+      footer { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html" class="logo" style="text-decoration:none;">
+    <div class="logo-mark">DW</div>
+    <span><span class="logo-dw">DW</span>Forge</span>
+  </a>
+  <a href="../tool.html" class="nav-cta">Write my DataWeave</a>
+</nav>
+
+<div class="article-wrap">
+
+  <div class="article-tag">DataWeave Guide</div>
+
+  <h1>Salesforce to NetSuite DataWeave Transformation: Complete Production Guide</h1>
+
+  <p class="article-intro">Real field mapping, null handling, date conversion, and working DataWeave code for Salesforce to NetSuite integration via MuleSoft. No theory. Just the patterns that actually work in production.</p>
+
+  <div class="dwforge-cta">
+    <div class="cta-label">Don't want to write this yourself?</div>
+    <p><a href="../tool.html">DWForge</a> generates every transformation in this article automatically. Paste your Salesforce payload, pick NetSuite as your target, and get production-ready DataWeave in seconds. Free. No signup.</p>
+  </div>
+
+  <div class="article-meta">
+    <span>By DWForge</span>
+    <span class="meta-dot"></span>
+    <span>June 2026</span>
+    <span class="meta-dot"></span>
+    <span>18 min read</span>
+    <span class="meta-dot"></span>
+    <span>MuleSoft, Salesforce, NetSuite</span>
+  </div>
+
+  <div class="toc">
+    <div class="toc-title">In this article</div>
+    <ol>
+      <li><a href="#the-problem">Why this mapping is harder than it looks</a></li>
+      <li><a href="#what-youre-mapping">What you are actually mapping</a></li>
+      <li><a href="#salesforce-payload">The Salesforce payload structure</a></li>
+      <li><a href="#netsuite-structure">What NetSuite expects</a></li>
+      <li><a href="#internal-ids">The internal ID problem</a></li>
+      <li><a href="#date-conversion">Date format conversion</a></li>
+      <li><a href="#null-handling">Null handling</a></li>
+      <li><a href="#line-items">Mapping line items</a></li>
+      <li><a href="#full-transformation">The full DataWeave transformation</a></li>
+      <li><a href="#testing">Testing and validation</a></li>
+    </ol>
+  </div>
+
+  <h2 id="the-problem">Why this mapping is harder than it looks</h2>
+
+  <p>On paper, Salesforce to NetSuite looks straightforward. Opportunity becomes a SalesOrder. Account becomes a Customer. Line items become NetSuite item lines. Simple enough.</p>
+
+  <p>In practice, three things catch teams out every time.</p>
+
+  <p>First, NetSuite does not accept field values the way Salesforce sends them. Dates are in different formats, references use internal IDs instead of external keys, and amounts need to match exactly across header and line level or NetSuite rejects the whole record.</p>
+
+  <p>Second, NetSuite has no tolerance for nulls in reference fields. Salesforce will happily return a null <code>AccountId</code> on an opportunity that is not linked properly. NetSuite will throw a fault when you try to pass that null as a customer reference. Your integration needs to catch this before it hits the API, not after.</p>
+
+  <p>Third, the NetSuite REST API and SuiteTalk SOAP API expect different payload shapes. This guide covers the REST approach, which is what most new MuleSoft integrations use. If you are on SOAP, the DataWeave logic is the same but the output format changes.</p>
+
+  <div class="callout warn">
+    <div class="callout-label">Most common failure</div>
+    <p>The integration works fine in DEV with clean test data, then falls over in PROD the first time a Salesforce opportunity has a missing product line item or a null account reference. Build for the messy data from day one.</p>
+  </div>
+
+  <h2 id="what-youre-mapping">What you are actually mapping</h2>
+
+  <p>The core flow is this: a Salesforce Opportunity with its line items becomes a NetSuite SalesOrder. The Salesforce Account becomes the NetSuite Customer reference. Each OpportunityLineItem becomes a NetSuite item line.</p>
+
+  <table class="field-table">
+    <thead>
+      <tr><th>Salesforce</th><th>NetSuite</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Opportunity.Name</td><td>SalesOrder.memo</td><td>Free text, maps cleanly</td></tr>
+      <tr><td>Opportunity.CloseDate</td><td>SalesOrder.tranDate</td><td>Format conversion required</td></tr>
+      <tr><td>Account.netsuite_customer_id__c</td><td>SalesOrder.entity.id</td><td>Must be NetSuite internal ID</td></tr>
+      <tr><td>Opportunity.CurrencyIsoCode</td><td>SalesOrder.currency.refName</td><td>ISO code to full currency name</td></tr>
+      <tr><td>OpportunityLineItem.Quantity</td><td>item.quantity</td><td>Maps directly</td></tr>
+      <tr><td>OpportunityLineItem.UnitPrice</td><td>item.rate</td><td>Maps directly</td></tr>
+      <tr><td>OpportunityLineItem.TotalPrice</td><td>item.amount</td><td>Verify: quantity x rate must equal amount</td></tr>
+      <tr><td>Product2.netsuite_item_id__c</td><td>item.item.id</td><td>Must be NetSuite internal ID</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="salesforce-payload">The Salesforce payload structure</h2>
+
+  <p>Your Mule flow will typically query Salesforce for the Opportunity and its related records in one SOQL call. This is the shape of the payload arriving at your Transform Message component.</p>
+
+  <pre><code>{
+  "Name": "Acme Corp - Q2 Enterprise Deal",
+  "CloseDate": "2026-06-30",
+  "CurrencyIsoCode": "USD",
+  "Account": {
+    "Name": "Acme Corp",
+    "netsuite_customer_id__c": "1234"
+  },
+  "OpportunityLineItems": {
+    "records": [
+      {
+        "Quantity": 5,
+        "UnitPrice": 3000.00,
+        "TotalPrice": 15000.00,
+        "Description": "Enterprise Licence",
+        "PricebookEntry": {
+          "Product2": {
+            "Name": "Enterprise Licence",
+            "netsuite_item_id__c": "567"
+          }
+        }
+      }
+    ]
+  }
+}</code></pre>
+
+  <p>Two custom fields are doing the heavy lifting: <code>netsuite_customer_id__c</code> on Account and <code>netsuite_item_id__c</code> on Product2. These need to be populated in Salesforce before this integration runs. If they are empty, validate early and route to a dead letter queue. Do not silently pass empty strings to NetSuite.</p>
+
+  <div class="dwforge-cta">
+    <div class="cta-label">Paste your real payload</div>
+    <p>Your Salesforce payload will look different from this. Different field names, different custom fields, different nesting. <a href="../tool.html">Paste your actual payload into DWForge</a> and it builds the transformation around your real data structure, not a generic example.</p>
+  </div>
+
+  <h2 id="netsuite-structure">What NetSuite expects</h2>
+
+  <p>Using the NetSuite REST API, a SalesOrder create request looks like this.</p>
+
+  <pre><code>{
+  "entity": { "id": "1234" },
+  "tranDate": "6/30/2026",
+  "memo": "Acme Corp - Q2 Enterprise Deal",
+  "currency": { "refName": "US Dollar" },
+  "externalId": "0065g00000AbcDEFAAZ",
+  "item": {
+    "items": [
+      {
+        "item": { "id": "567" },
+        "quantity": 5,
+        "rate": 3000.00,
+        "amount": 15000.00,
+        "description": "Enterprise Licence"
+      }
+    ]
+  }
+}</code></pre>
+
+  <p>The <code>entity.id</code> must be the NetSuite internal ID as a string, not the Salesforce AccountId. The <code>tranDate</code> uses MM/DD/YYYY, not ISO. And <code>externalId</code> stores the Salesforce Opportunity ID for idempotency.</p>
+
+  <h2 id="internal-ids">The internal ID problem</h2>
+
+  <p>NetSuite references work on internal IDs, not names or Salesforce IDs. The <code>entity</code> field needs the NetSuite internal ID of the Customer record. The <code>item.item.id</code> needs the NetSuite internal ID of the Item record.</p>
+
+  <p>The simplest approach is to store the NetSuite internal ID as a custom field on the Salesforce record. <code>Account.netsuite_customer_id__c</code> holds the customer ID, and you map it directly in DataWeave. This works well if you have control over the Salesforce data model and can keep those fields populated.</p>
+
+  <div class="callout warn">
+    <div class="callout-label">Guard against empty IDs</div>
+    <p>If <code>netsuite_customer_id__c</code> is null or empty, your DataWeave will produce <code>"entity": {"id": ""}</code> and NetSuite will reject it with a vague error. Validate before the transform. Throw an error in your flow if the ID is missing, so you get a clear failure rather than a confusing NetSuite fault.</p>
+  </div>
+
+  <h2 id="date-conversion">Date format conversion</h2>
+
+  <p>Salesforce sends dates as ISO 8601: <code>2026-06-30</code>. NetSuite REST expects MM/DD/YYYY: <code>6/30/2026</code>. Use DataWeave's built-in Date type with explicit format patterns. Do not try to split the string manually.</p>
+
+  <pre><code>%dw 2.0
+output application/json
+
+fun toNetSuiteDate(sfDate) =
+  if (sfDate != null and sfDate != "")
+    (sfDate as Date {format: "yyyy-MM-dd"}) as String {format: "M/d/yyyy"}
+  else null</code></pre>
+
+  <div class="dwforge-cta">
+    <div class="cta-label">Date formats giving you trouble?</div>
+    <p>NetSuite, Workday, SAP, and D365 all use different date formats. <a href="../tool.html">Tell DWForge your source and target systems</a> and it handles the conversion automatically, including timezone offsets and datetime to date truncation.</p>
+  </div>
+
+  <h2 id="null-handling">Null handling</h2>
+
+  <p>NetSuite is strict. Salesforce is not. Every field in your DataWeave needs a default or a null guard. For string fields, use <code>default ""</code>. For numeric fields, use <code>default 0</code>. For reference IDs, validate before the transform rather than defaulting to an empty string.</p>
+
+  <pre><code>// String field with default
+memo: payload.Name default "",
+
+// Numeric field with default
+quantity: (lineItem.Quantity default 0) as Number,
+
+// Optional field - omit entirely if null rather than sending null
+... (if (lineItem.Description != null) {description: lineItem.Description} else {})</code></pre>
+
+  <h2 id="line-items">Mapping line items</h2>
+
+  <p><code>OpportunityLineItems.records</code> can be null if the opportunity has no products. Always default the array before mapping it. The item reference inside each line needs the same null guard as the customer reference at the header level.</p>
+
+  <pre><code>item: {
+  items: (payload.OpportunityLineItems.records default []) map (lineItem) -> {
+    item: {
+      id: lineItem.PricebookEntry.Product2.netsuite_item_id__c default ""
+    },
+    quantity: (lineItem.Quantity default 0) as Number,
+    rate: (lineItem.UnitPrice default 0) as Number,
+    amount: (lineItem.TotalPrice default 0) as Number,
+    ... (if (lineItem.Description != null) {description: lineItem.Description} else {})
+  }
+}</code></pre>
+
+  <div class="callout tip">
+    <div class="callout-label">Amount reconciliation</div>
+    <p>NetSuite will sometimes recalculate the line amount from quantity x rate and ignore what you send in the amount field. If your Salesforce TotalPrice does not exactly equal Quantity x UnitPrice due to discounts or rounding, you may see discrepancies. Reconcile this in your DataWeave rather than relying on NetSuite to do it.</p>
+  </div>
+
+  <h2 id="full-transformation">The full DataWeave transformation</h2>
+
+  <p>Here is the complete Transform Message script. Drop this into your Mule flow after the Salesforce query and before the NetSuite HTTP request.</p>
+
+  <pre><code>%dw 2.0
+output application/json
+
+// Convert Salesforce ISO date to NetSuite MM/DD/YYYY format
+fun toNetSuiteDate(sfDate) =
+  if (sfDate != null and sfDate != "")
+    (sfDate as Date {format: "yyyy-MM-dd"}) as String {format: "M/d/yyyy"}
+  else null
+
+// Map Salesforce currency code to NetSuite currency name
+fun toCurrencyName(isoCode) =
+  if (isoCode == "USD") "US Dollar"
+  else if (isoCode == "AUD") "Australian Dollar"
+  else if (isoCode == "GBP") "British Pound"
+  else if (isoCode == "EUR") "Euro"
+  else isoCode
+
+---
+{
+  // Customer reference - must be NetSuite internal ID
+  entity: {
+    id: payload.Account.netsuite_customer_id__c default ""
+  },
+
+  // Transaction date in NetSuite format
+  tranDate: toNetSuiteDate(payload.CloseDate),
+
+  // Order memo from Opportunity name
+  memo: payload.Name default "",
+
+  // Currency
+  currency: {
+    refName: toCurrencyName(payload.CurrencyIsoCode default "USD")
+  },
+
+  // Salesforce opportunity ID for idempotency
+  externalId: payload.Id default "",
+
+  // Line items
+  item: {
+    items: (payload.OpportunityLineItems.records default []) map (lineItem) -> {
+      item: {
+        id: lineItem.PricebookEntry.Product2.netsuite_item_id__c default ""
+      },
+      quantity: (lineItem.Quantity default 0) as Number,
+      rate: (lineItem.UnitPrice default 0) as Number,
+      amount: (lineItem.TotalPrice default 0) as Number,
+      ... (if (lineItem.Description != null and lineItem.Description != "")
+          {description: lineItem.Description}
+          else {})
+    }
+  }
+}</code></pre>
+
+  <p>Rather than write this by hand, we used DWForge to generate it. Paste the Salesforce payload, set source to Salesforce and target to NetSuite, and it produces the same script in seconds.</p>
+
+  <div class="screenshot-wrap">
+    <img src="dwforge-netsuite-generated.png" alt="DWForge generating the Salesforce to NetSuite DataWeave transformation with source set to Salesforce and target set to NetSuite">
+    <p class="screenshot-caption">DWForge generating the Salesforce to NetSuite DataWeave. Source: Salesforce. Target: NetSuite. Output ready to paste into Anypoint Studio.</p>
+  </div>
+
+  <h2 id="testing">Testing and validation</h2>
+
+  <p>Before wiring this into your Mule flow, validate the DataWeave script in the DataWeave Playground. Paste the script, paste your Salesforce payload as the input, run it, and check the output matches what the NetSuite API expects.</p>
+
+  <p>Four things to confirm in the output. The <code>tranDate</code> is in MM/DD/YYYY format, not ISO. The <code>entity.id</code> contains the NetSuite customer ID from the custom field, not the Salesforce AccountId. The <code>currency.refName</code> is the full name like "US Dollar", not the ISO code. And <code>item.items</code> is an array with the correct number of lines.</p>
+
+  <div class="screenshot-wrap">
+    <img src="dwforge-netsuite-playground.png" alt="DataWeave Playground showing the Salesforce to NetSuite transformation validated with correct output including tranDate in MM/DD/YYYY format and entity id mapped correctly">
+    <p class="screenshot-caption">The transformation validated in the DataWeave Playground. Input: Salesforce Opportunity payload. Output: NetSuite SalesOrder JSON with correct date format, entity reference, and line items.</p>
+  </div>
+
+  <p>The output above confirms all four. <code>tranDate</code> is <code>6/30/2026</code>, <code>entity.id</code> is <code>"1234"</code> from the custom field, <code>currency.refName</code> is <code>"US Dollar"</code>, and the line item maps correctly with quantity 5, rate 3000, and amount 15000.</p>
+
+  <p>Once the Playground output looks right, add the script to your Mule flow. Add logging before and after the Transform Message component at DEBUG level. When something goes wrong in production and it will, you need to see exactly what was sent to NetSuite.</p>
+
+  <div class="callout tip">
+    <div class="callout-label">Idempotency</div>
+    <p>The <code>externalId</code> field stores the Salesforce Opportunity ID on the NetSuite order. If the integration runs twice for the same opportunity, NetSuite rejects the second request as a duplicate rather than creating a second order. Always set this. It saves hours of deduplication work later.</p>
+  </div>
+
+  <div class="final-cta">
+    <h2>Skip writing this by hand</h2>
+    <p>Paste your Salesforce payload, pick NetSuite as your target. DWForge writes the DataWeave for your exact field structure in seconds.</p>
+    <a href="../tool.html" class="btn-white">Write my DataWeave</a>
+    <p class="final-cta-note">Free during beta. No signup. No credit card.</p>
+  </div>
+
+</div>
+
+<footer>
+  <span>© 2026 DWForge. Built by an integration architect.</span>
+  <div class="footer-links">
+    <a href="../tool.html">Tool</a>
+    <a href="../pricing.html">Pricing</a>
+    <a href="../articles/">Guides</a>
+    <a href="mailto:hello@dwforge.ai">Contact</a>
+  </div>
+</footer>
+<div style="background:var(--bg-secondary);border-top:1px solid var(--border);padding:1rem 2rem;font-size:12px;color:var(--text-muted);line-height:1.7;text-align:center">
+  All product names, logos, and trademarks are the property of their respective owners. DWForge is not affiliated with, endorsed by, or officially connected to Salesforce, NetSuite, Oracle, MuleSoft, or any other platform listed on this site.
+</div>
+
+</body>
+</html>
