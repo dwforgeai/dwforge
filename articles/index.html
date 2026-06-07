@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -21,10 +20,9 @@
     body { font-family: var(--font); color: var(--text); background: var(--bg); line-height: 1.65; font-size: 16px; }
     a { color: inherit; text-decoration: none; }
 
-    /* Nav */
     nav { display: flex; align-items: center; justify-content: space-between; padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: #fff; position: sticky; top: 0; z-index: 100; }
     .logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
-    .logo-mark { width: 34px; height: 34px; background: var(--blue); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 0; }
+    .logo-mark { width: 34px; height: 34px; background: var(--blue); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700; }
     .logo-dw { color: var(--blue); }
     .nav-links { display: flex; align-items: center; gap: 2rem; font-size: 15px; color: var(--text-muted); }
     .nav-links a:hover { color: var(--text); }
@@ -32,13 +30,11 @@
     .nav-cta { background: var(--blue); color: #fff !important; padding: 8px 20px; border-radius: var(--radius); font-weight: 600; font-size: 14px; }
     .nav-cta:hover { background: var(--blue-dark); }
 
-    /* Page header */
     .page-header { max-width: 820px; margin: 0 auto; padding: 4rem 2rem 2rem; }
     .page-eyebrow { font-size: 13px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem; }
     .page-header h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 1rem; }
     .page-header p { font-size: 1.05rem; color: var(--text-muted); max-width: 560px; line-height: 1.75; }
 
-    /* Guides list */
     .guides-wrap { max-width: 820px; margin: 0 auto; padding: 2rem 2rem 4rem; }
     .guide-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 1.75rem 2rem; margin-bottom: 1rem; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
     .guide-card:hover { border-color: #c5cdd8; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -50,12 +46,6 @@
     .guide-meta { font-size: 13px; color: #8a93a0; display: flex; align-items: center; gap: 12px; }
     .guide-meta-dot { width: 3px; height: 3px; background: #c5cdd8; border-radius: 50%; }
 
-    /* Coming soon card */
-    .guide-card.soon { background: var(--bg-secondary); border-style: dashed; }
-    .guide-card.soon h2 { color: var(--text-muted); font-weight: 600; }
-    .soon-tag { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.6rem; }
-
-    /* CTA strip */
     .cta-strip { background: var(--blue); color: #fff; padding: 4rem 2rem; text-align: center; }
     .cta-strip h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 700; margin-bottom: 0.6rem; letter-spacing: -0.01em; }
     .cta-strip p { font-size: 1rem; opacity: 0.8; margin-bottom: 1.75rem; }
@@ -63,7 +53,6 @@
     .btn-white:hover { background: #f0f4f8; }
     .cta-note { font-size: 13px; opacity: 0.65; margin-top: 0.75rem; }
 
-    /* Footer */
     footer { padding: 2rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; font-size: 13px; color: var(--text-muted); }
     .footer-links { display: flex; gap: 1.5rem; }
     .footer-links a { color: var(--text-muted); }
@@ -82,7 +71,7 @@
 
 <nav>
   <div class="logo">
-    <a href="../index.html" style="display:flex;align-items:center;gap:10px;">
+    <a href="../index.html" style="display:flex;align-items:center;gap:10px;color:inherit;">
       <div class="logo-mark">DW</div>
       <span><span class="logo-dw">DW</span>Forge</span>
     </a>
@@ -135,10 +124,19 @@
     </div>
   </div>
 
-  <div class="guide-card soon">
-    <div class="soon-tag">Coming soon</div>
-    <h2>Next guide in progress</h2>
-    <p>The next transformation guide is being written now. Check back shortly.</p>
+  <div class="guide-card">
+    <div class="guide-tag">DataWeave guide</div>
+    <h2><a href="salesforce-to-netsuite-dataweave.html">Salesforce to NetSuite DataWeave Transformation: Complete Production Guide</a></h2>
+    <p>Real field mapping, null handling, date conversion, and working DataWeave code for Salesforce to NetSuite integration via MuleSoft. Covers internal ID mapping, the date format gap between systems, and line item handling that breaks most integrations in production.</p>
+    <div class="guide-meta">
+      <span>DataWeave 2.0</span>
+      <span class="guide-meta-dot"></span>
+      <span>MuleSoft</span>
+      <span class="guide-meta-dot"></span>
+      <span>Salesforce, NetSuite</span>
+      <span class="guide-meta-dot"></span>
+      <span>18 min read</span>
+    </div>
   </div>
 
 </div>
