@@ -261,33 +261,25 @@ RULE 9: Code must compile and run in MuleSoft DataWeave Playground without modif
 After the complete DataWeave code, write exactly "EXPLANATION:" on a new line.
 Then write 2-3 plain English sentences: what the transformation does, key decisions made, and one thing to verify before deploying.`;
 
-const MULE_PROJECT_SYSTEM_PROMPT = `You are a senior MuleSoft architect generating complete, production-ready Mule 4.6 projects for CloudHub 2.0.
+const MULE_PROJECT_SYSTEM_PROMPT = `You are a senior MuleSoft architect. Generate a production-ready Mule 4.6 project.
 
-OUTPUT FORMAT — MANDATORY. Use exactly this structure. Every character matters.
+OUTPUT FORMAT — use this exactly, no other text:
 
-===PROJECT: {projectName}===
+===PROJECT: {appname}-integration===
 ===FILE: src/main/mule/{appname}-main.xml===
-[file content]
-===FILE: src/main/mule/{appname}-error-handler.xml===
-[file content]
-===FILE: src/main/mule/{appname}-common.xml===
-[file content]
-===FILE: src/main/resources/application.yaml===
-[file content]
+[complete XML file content]
 ===FILE: pom.xml===
-[file content]
-===FILE: README.md===
-[file content]
+[complete pom.xml content]
+===FILE: src/main/resources/application.yaml===
+[complete yaml content]
 ===END===
 
-STRICT RULES:
-- Start your response with ===PROJECT: on the very first line
-- Replace {projectName} with the actual project name e.g. salesforce-d365-test-integration
-- Replace {appname} with the short app name e.g. salesforce-d365-test
-- Replace [file content] with the actual complete file content
-- Never use markdown code fences or backticks anywhere
-- Never add explanation text outside the === markers
-- The last line must be ===END===
+RULES:
+- First line must be ===PROJECT:
+- Replace {appname} with the actual app name
+- Write real complete file content, not placeholders
+- No markdown, no backticks, no explanation outside the markers
+- Last line must be ===END===
 
 MULE 4.6 CLOUDhub 2.0 REQUIREMENTS:
 
@@ -410,7 +402,7 @@ export default async function handler(req, res) {
         `Required connector Maven dependencies:\n${connectorDeps.map(d => `${d.groupId}:${d.artifactId}:${d.version}`).join('\n')}`,
       ].filter(Boolean).join('\n\n');
 
-      const response = await callClaude(MULE_PROJECT_SYSTEM_PROMPT, userPrompt, 8000);
+      const response = await callClaude(MULE_PROJECT_SYSTEM_PROMPT, userPrompt, 3000);
       if (!response.ok) return handleClaudeError(response, res);
 
       const data = await response.json();
@@ -418,30 +410,22 @@ export default async function handler(req, res) {
 
       let projectData;
       try {
-        // Parse delimiter format — robust, no JSON escaping issues
         const projectMatch = rawText.match(/===PROJECT:\s*([^\n=]+)===/);
         const projectName = projectMatch ? projectMatch[1].trim() : cleanAppName + '-integration';
 
         const files = {};
-        // Match ===FILE: path=== then capture everything until next ===FILE: or ===END===
         const parts = rawText.split(/===FILE:\s*/);
         for (let i = 1; i < parts.length; i++) {
-          const newlineIdx = parts[i].indexOf('\n');
-          if (newlineIdx === -1) continue;
-          const filePath = parts[i].substring(0, newlineIdx).replace(/===.*$/, '').trim();
-          let fileContent = parts[i].substring(newlineIdx + 1);
-          // Strip trailing ===END=== if present
-          fileContent = fileContent.replace(/\n?===END===.*$/s, '').trim();
-          if (filePath && fileContent) files[filePath] = fileContent;
+          const nl = parts[i].indexOf('\n');
+          if (nl === -1) continue;
+          const filePath = parts[i].substring(0, nl).replace(/=+.*$/, '').trim();
+          let content = parts[i].substring(nl + 1).replace(/\n?===END===.*$/s, '').trim();
+          if (filePath && content) files[filePath] = content;
         }
 
         if (Object.keys(files).length === 0) {
-          // Return debug info so we can see what Claude actually returned
-          console.error('No files parsed. First 1000 chars:', rawText.substring(0, 1000));
-          return res.status(500).json({ 
-            error: 'Project generation failed. Please try again.',
-            debug: rawText.substring(0, 500)
-          });
+          console.error('No files parsed. Raw response start:', rawText.substring(0, 600));
+          return res.status(500).json({ error: 'Project generation failed. Please try again.', debug: rawText.substring(0, 300) });
         }
 
         projectData = { projectName, files };
@@ -504,7 +488,7 @@ async function callClaude(systemPrompt, userContent, maxTokens) {
       'x-api-key': process.env.ANTHROPIC_API_KEY,
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-4-6',
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: 'user', content: userContent }],
