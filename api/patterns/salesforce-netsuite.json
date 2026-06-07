@@ -1,0 +1,36 @@
+{
+  "id": "salesforce-netsuite",
+  "source": "Salesforce",
+  "target": "NetSuite",
+  "description": "Salesforce Opportunity to NetSuite SalesOrder. Validated in DataWeave Playground.",
+  "criticalRules": [
+    "entity.id must be netsuite_customer_id__c (internal ID), never Salesforce AccountId",
+    "item.item.id must be netsuite_item_id__c. Null = route to dead letter queue, never empty string",
+    "externalId must always be set to Salesforce Opportunity.Id for idempotency on retry",
+    "tranDate format is M/d/yyyy (no leading zeros). NetSuite rejects ISO 8601",
+    "currency.refName is full English name (US Dollar not USD)",
+    "OpportunityLineItems.records can be null - always default to empty array",
+    "NetSuite item array structure is item.items (nested), not flat array"
+  ],
+  "keyMappings": {
+    "entity.id": "Account.netsuite_customer_id__c",
+    "tranDate": "CloseDate (converted to M/d/yyyy)",
+    "memo": "Opportunity.Name",
+    "currency.refName": "CurrencyIsoCode (USD -> US Dollar)",
+    "externalId": "Opportunity.Id",
+    "item.items[].item.id": "OpportunityLineItem.PricebookEntry.Product2.netsuite_item_id__c",
+    "item.items[].quantity": "OpportunityLineItem.Quantity as Number",
+    "item.items[].rate": "OpportunityLineItem.UnitPrice as Number",
+    "item.items[].amount": "OpportunityLineItem.TotalPrice as Number"
+  },
+  "dateConversion": "fun toNSDate(d) = if (d != null and d != '') (d as Date {format: 'yyyy-MM-dd'}) as String {format: 'M/d/yyyy'} else null",
+  "currencyMap": {"USD":"US Dollar","AUD":"Australian Dollar","GBP":"British Pound","EUR":"Euro","CAD":"Canadian Dollar"},
+  "connectors": ["salesforce-connector","http-connector"],
+  "netsuiteEndpoint": "POST /services/rest/record/v1/salesOrder",
+  "commonFailures": [
+    "INVALID_KEY_OR_REF on entity: netsuite_customer_id__c is null or empty",
+    "tranDate invalid: date passed as ISO instead of M/d/yyyy",
+    "Duplicate SalesOrder: externalId not set",
+    "Amount discrepancy: NetSuite recalculates qty x rate, bypasses TotalPrice with discounts"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "salesforce-d365",
+  "source": "Salesforce",
+  "target": "Microsoft D365 F&O",
+  "description": "Salesforce to D365 F&O via OData. Customer, Product, Sales Order sync. Production-validated at HCA.",
+  "criticalRules": [
+    "D365 OData requires dataAreaId on every entity - never null, must match legal entity",
+    "D365 date format is ISO 8601 with time: '2024-01-15T00:00:00Z' - Salesforce dates need T00:00:00Z appended",
+    "D365 strings have exact max lengths - CustomerAccount 20 chars, Name 60 chars - truncate or reject",
+    "D365 OData PATCH requires only changed fields - do not send all fields on update",
+    "D365 OData POST for new records must NOT include @odata.etag - only for PATCH",
+    "D365 enum fields (SalesStatus, InvoiceStatus) only accept exact enum values - validate before send",
+    "D365 amount fields must be Decimal type - cast explicitly: payload.Amount as Number",
+    "D365 customer account must exist before sales order - sync sequence matters"
+  ],
+  "keyMappings": {
+    "dataAreaId": "From config/properties - e.g. 'USMF' for US legal entity",
+    "CustomerAccount": "Account.ERP_Account_Number__c (max 20 chars)",
+    "SalesOrderName": "Opportunity.Name (max 60 chars, truncate if longer)",
+    "CurrencyCode": "Opportunity.CurrencyIsoCode (ISO 3-letter code, D365 uses same)",
+    "RequestedShipDate": "CloseDate ++ 'T00:00:00Z'",
+    "SalesOrderLines[].ItemNumber": "Product2.ERP_Item_Number__c",
+    "SalesOrderLines[].SalesQuantity": "Quantity as Number",
+    "SalesOrderLines[].SalesPrice": "UnitPrice as Number",
+    "CustomerReference": "Opportunity.Id (for idempotency tracking)"
+  },
+  "d365ODataEndpoints": {
+    "customers": "GET/POST /data/Customers",
+    "salesOrders": "POST /data/SalesOrderHeadersV2",
+    "salesOrderLines": "POST /data/SalesOrderLinesV2",
+    "products": "GET /data/ReleasedProductsV2"
+  },
+  "authPattern": "OAuth 2.0 Client Credentials via Azure AD. Token endpoint: https://login.microsoftonline.com/{tenantId}/oauth2/token",
+  "dateConversion": "fun toD365Date(d) = if (d != null and d != '') d ++ 'T00:00:00Z' else null",
+  "connectors": ["salesforce-connector","http-connector"],
+  "commonFailures": [
+    "dataAreaId wrong: legal entity not configured or typo - check D365 legal entities list",
+    "CustomerAccount not found: customer sync must run before order sync",
+    "String too long: D365 OData returns 400 with field max length in error message",
+    "Auth token expired: D365 token lifetime is 1 hour - implement token caching in Mule",
+    "OData batch failures: D365 returns 200 with individual errors in batch - check each response"
+  ]
+}

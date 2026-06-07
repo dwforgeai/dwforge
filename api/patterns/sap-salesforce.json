@@ -1,0 +1,35 @@
+{
+  "id": "sap-salesforce",
+  "source": "SAP S/4HANA",
+  "target": "Salesforce",
+  "description": "SAP customer, material, and order data to Salesforce. Inbound from SAP via IDoc, RFC, or OData.",
+  "criticalRules": [
+    "Strip leading zeros from SAP customer numbers for human-readable Salesforce values: '0000001234' → '1234'",
+    "Strip leading zeros from SAP material numbers before mapping to Product Name",
+    "SAP dates are YYYYMMDD — convert to yyyy-MM-dd for Salesforce Date fields",
+    "SAP amounts are strings in some RFC responses — always cast to Number",
+    "Always set external ID field (SAP_Customer_Number__c) for upsert idempotency",
+    "SAP BAPI responses wrap data in tables — access as payload.CUSTOMER_LIST",
+    "Empty string in SAP = no value — treat as null in Salesforce"
+  ],
+  "keyMappings": {
+    "SAP_Customer_Number__c": "KNNUR (stripped of leading zeros, external ID)",
+    "Name": "NAME1 (max 80 chars in Salesforce)",
+    "Phone": "TELF1 default null",
+    "BillingStreet": "STRAS default null",
+    "BillingCity": "ORT01 default null",
+    "BillingPostalCode": "PSTLZ default null",
+    "BillingCountryCode": "LAND1 (ISO 2-letter)",
+    "CurrencyIsoCode": "WAERS"
+  },
+  "dateConversion": "fun fromSAPDate(d) = if (d != null and d != '' and d != '00000000') (d as Date {format: 'yyyyMMdd'}) as String {format: 'yyyy-MM-dd'} else null",
+  "stripLeadingZeros": "fun stripZeros(s) = if (s != null) (s as Number as String) else null",
+  "connectors": ["sap-connector", "salesforce-connector"],
+  "salesforceOperation": "UPSERT on SAP_Customer_Number__c",
+  "commonFailures": [
+    "Duplicate accounts: external ID not set or field not marked as External ID in Salesforce",
+    "Date field null: '00000000' not treated as null — add specific check",
+    "Name truncation: SAP NAME1 can be longer than Salesforce 80-char limit",
+    "Amount type error: SAP sends numeric strings — always cast to Number"
+  ]
+}

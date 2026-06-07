@@ -1,0 +1,43 @@
+{
+  "id": "salesforce-sap",
+  "source": "Salesforce",
+  "target": "SAP S/4HANA",
+  "description": "Salesforce Order/Account to SAP Sales Order via RFC or OData. Production-validated.",
+  "criticalRules": [
+    "SAP material numbers must be left-padded to 18 characters with leading zeros: '100' becomes '000000000000000100'",
+    "SAP customer numbers (KUNNR) left-padded to 10 characters",
+    "SAP dates are YYYYMMDD format (no hyphens, no slashes)",
+    "SAP amounts use period as decimal separator regardless of locale",
+    "SAP currency codes are 3-char ISO (USD, EUR) - same as Salesforce CurrencyIsoCode",
+    "SAP sales org, distribution channel, division must all be populated - cannot be null",
+    "SAP BAPI_SALESORDER_CREATEFROMDAT2 requires VBELN (order number) as output, not input",
+    "Empty strings in SAP BAPI calls cause RFC_ERROR_SYSTEM_FAILURE - use null not empty string for optional fields"
+  ],
+  "keyMappings": {
+    "ORDER_HEADER_IN.DOC_TYPE": "Hardcoded 'TA' for standard sales order",
+    "ORDER_HEADER_IN.SALES_ORG": "Account.SAP_Sales_Org__c or properties placeholder",
+    "ORDER_HEADER_IN.DISTR_CHAN": "Account.SAP_Distribution_Channel__c or properties placeholder",
+    "ORDER_HEADER_IN.DIVISION": "Account.SAP_Division__c or properties placeholder",
+    "ORDER_HEADER_IN.PURCH_NO_C": "Opportunity.Name (customer reference)",
+    "ORDER_HEADER_IN.PURCH_DATE": "Today's date in YYYYMMDD",
+    "ORDER_PARTNERS[PARVW=AG].PARTN_NUMB": "Account.SAP_Customer_Number__c padded to 10 chars",
+    "ORDER_ITEMS_IN[].MATERIAL": "Product2.SAP_Material_Number__c padded to 18 chars",
+    "ORDER_ITEMS_IN[].TARGET_QTY": "Quantity as string with 3 decimal places: '5.000'",
+    "ORDER_CONDITIONS_IN[].COND_TYPE": "Hardcoded 'PR00' for base price",
+    "ORDER_CONDITIONS_IN[].COND_VALUE": "UnitPrice as string"
+  },
+  "dateConversion": "fun toSAPDate(d) = if (d != null and d != '') (d as Date {format: 'yyyy-MM-dd'}) as String {format: 'yyyyMMdd'} else null",
+  "paddingFunctions": {
+    "materialNumber": "fun padMaterial(m) = if (m != null) ('000000000000000000' ++ m)[-18 to -1] else null",
+    "customerNumber": "fun padCustomer(c) = if (c != null) ('0000000000' ++ c)[-10 to -1] else null"
+  },
+  "connectors": ["sap-connector","http-connector"],
+  "sapInterface": "BAPI_SALESORDER_CREATEFROMDAT2 via SAP Connector or OData /API_SALES_ORDER_SRV",
+  "commonFailures": [
+    "Material not found: number not zero-padded to 18 chars",
+    "Customer not found: KUNNR not zero-padded to 10 chars",
+    "RFC_ERROR: empty string passed for optional field - use null",
+    "Date format error: YYYYMMDD expected, ISO 8601 passed",
+    "Missing org data: sales org/dist channel/division not in payload - must come from config"
+  ]
+}

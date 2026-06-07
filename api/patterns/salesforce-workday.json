@@ -1,0 +1,34 @@
+{
+  "id": "salesforce-workday",
+  "source": "Salesforce",
+  "target": "Workday",
+  "description": "Salesforce Contact or Account to Workday Worker or Organisation. HR system of record sync.",
+  "criticalRules": [
+    "Workday REST API requires OAuth 2.0 — token endpoint: https://{tenant}.workday.com/ccx/oauth2/{tenant}/token",
+    "Workday tenant name must be in every API URL — comes from config not payload",
+    "PUT to update existing worker, POST to create — check existence first",
+    "Workday worker ID (WID) is the internal identifier — must be retrieved before update",
+    "Phone numbers must include country dialing code in Workday format",
+    "Workday job profile and position must exist before worker can be created",
+    "Date format for Workday: yyyy-MM-dd (ISO, no time component)"
+  ],
+  "keyMappings": {
+    "Legal_Name.First_Name": "Contact.FirstName",
+    "Legal_Name.Last_Name": "Contact.LastName",
+    "Email_Data[0].Email_Address": "Contact.Email",
+    "Phone_Data[0].Phone_Number": "Contact.Phone",
+    "Worker_ID": "Contact.Workday_ID__c (external reference)",
+    "Position_Data.Job_Profile_Reference.ID": "from config — must exist in Workday",
+    "Hire_Date": "Contact.Start_Date__c in yyyy-MM-dd"
+  },
+  "authPattern": "OAuth 2.0 Client Credentials: POST https://{tenant}.workday.com/ccx/oauth2/{tenant}/token with client_credentials grant",
+  "dateConversion": "fun toWorkdayDate(d) = if (d != null and d != '') d[0 to 9] else null",
+  "connectors": ["salesforce-connector", "http-connector"],
+  "workdayEndpoint": "PUT /api/v1/{tenant}/workers/{wid}",
+  "commonFailures": [
+    "Tenant URL wrong: must be exact tenant name, case-sensitive",
+    "WID not found: worker must be looked up by integration ID before PUT",
+    "Job profile not found: must be pre-populated in Workday before sync",
+    "Token expiry: Workday tokens expire — refresh before each batch"
+  ]
+}

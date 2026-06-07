@@ -1,0 +1,35 @@
+{
+  "id": "salesforce-servicenow",
+  "source": "Salesforce",
+  "target": "ServiceNow",
+  "description": "Salesforce Case, Account, Contact to ServiceNow Incident, Account, User. ITSM integration.",
+  "criticalRules": [
+    "ServiceNow REST API uses Basic Auth or OAuth — never hardcode credentials",
+    "ServiceNow sys_id is the internal record ID — store as external ID in Salesforce for update",
+    "ServiceNow accepts dates as yyyy-MM-dd HH:mm:ss format (no T, no Z)",
+    "ServiceNow reference fields need sys_id of the referenced record, not display value",
+    "Priority mapping: Salesforce priority string to ServiceNow integer (1=Critical, 2=High, 3=Moderate, 4=Low)",
+    "ServiceNow table API: POST to /api/now/table/{tableName}, PATCH with sys_id to update",
+    "Empty string is valid in ServiceNow — use null to clear a field"
+  ],
+  "keyMappings": {
+    "short_description": "Case.Subject (max 160 chars)",
+    "description": "Case.Description default ''",
+    "caller_id.value": "ServiceNow User sys_id (lookup by email)",
+    "priority": "Case.Priority: Critical→1, High→2, Medium→3, Low→4",
+    "state": "Case.Status: New→1, In Progress→2, Resolved→6, Closed→7",
+    "correlation_id": "Case.Id (Salesforce ID for idempotency)",
+    "company.value": "Account ServiceNow sys_id (pre-looked up)"
+  },
+  "priorityMap": {"Critical": 1, "High": 2, "Medium": 3, "Low": 4},
+  "stateMap": {"New": 1, "Open": 2, "In Progress": 2, "Resolved": 6, "Closed": 7},
+  "dateConversion": "fun toSNDate(d) = if (d != null and d != '') ((d as DateTime) as String {format: 'yyyy-MM-dd HH:mm:ss'}) else null",
+  "connectors": ["salesforce-connector", "http-connector"],
+  "serviceNowEndpoint": "POST /api/now/table/incident | PATCH /api/now/table/incident/{sys_id}",
+  "commonFailures": [
+    "Priority type error: ServiceNow expects integer, Salesforce sends string",
+    "Reference field wrong: sending display value instead of sys_id",
+    "Date format rejected: ISO 8601 with T and Z not accepted — use yyyy-MM-dd HH:mm:ss",
+    "Duplicate incidents: correlation_id not set — always set for idempotency"
+  ]
+}

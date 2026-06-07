@@ -1,0 +1,45 @@
+{
+  "id": "d365-salesforce",
+  "source": "Microsoft D365 F&O",
+  "target": "Salesforce",
+  "description": "D365 F&O to Salesforce sync via OData inbound. Invoice, Payment, Customer sync. Production-validated at HCA.",
+  "criticalRules": [
+    "D365 OData change tracking uses $deltaToken - always use delta query for incremental sync not full pull",
+    "D365 datetime fields come as ISO 8601 with Z suffix - strip time part for Salesforce Date fields",
+    "D365 decimal amounts come as number type in JSON - no casting needed, Salesforce accepts directly",
+    "D365 enum values come as integers in OData response (e.g. SalesStatus: 4) - map to Salesforce picklist values",
+    "D365 OData responses are paginated with @odata.nextLink - must follow all pages before processing",
+    "Salesforce upsert via composite API allows 200 records per batch",
+    "D365 @odata.etag must be stored if doing optimistic concurrency on PATCH back to D365",
+    "D365 deleted records come via $delta with @removed annotation - handle soft deletes in Salesforce"
+  ],
+  "keyMappings": {
+    "ERP_Account_Number__c": "CustomerAccount (external ID for upsert)",
+    "Name": "CustomerName (max 80 chars in Salesforce Account)",
+    "Phone": "PrimaryContactPhone default null",
+    "BillingStreet": "AddressStreet default null",
+    "BillingCity": "AddressCity default null",
+    "BillingCountry": "AddressCountryRegion default null",
+    "ERP_Status__c": "SalesStatus enum map: 1=Draft, 2=Confirmed, 3=Invoiced, 4=Cancelled",
+    "Invoice_Number__c": "InvoiceId (external ID for invoice records)",
+    "Invoice_Amount__c": "InvoiceAmount as Number",
+    "Invoice_Date__c": "InvoicingDate[0 to 9] (strip time portion)"
+  },
+  "d365SalesStatusMap": {
+    "1": "Draft",
+    "2": "Confirmed", 
+    "3": "Invoiced",
+    "4": "Cancelled",
+    "Backorder": "Backorder"
+  },
+  "paginationPattern": "while (payload.'@odata.nextLink' != null) fetch next page and accumulate",
+  "dateConversion": "fun fromD365Date(d) = if (d != null and d != '') d[0 to 9] else null",
+  "connectors": ["http-connector","salesforce-connector"],
+  "commonFailures": [
+    "Missing records in sync: @odata.nextLink not followed - always paginate to completion",
+    "Date field rejected by Salesforce: datetime passed instead of date - strip time portion",
+    "Upsert fails: external ID field not marked as External ID in Salesforce field setup",
+    "Enum mapping gap: D365 adds new status values - add default case in DataWeave",
+    "Delta token expired: D365 delta tokens expire after 7 days - fall back to full sync with date filter"
+  ]
+}

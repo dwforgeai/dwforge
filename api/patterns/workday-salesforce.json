@@ -1,0 +1,44 @@
+{
+  "id": "workday-salesforce",
+  "source": "Workday",
+  "target": "Salesforce",
+  "description": "Workday Worker/Employee data to Salesforce Contact or User sync. Production-validated.",
+  "criticalRules": [
+    "Workday REST API responses are wrapped in data array: payload.data map (worker) -> ...",
+    "Workday Worker_ID is the external ID for Salesforce upsert - always set Worker_ID__c",
+    "Workday dates come as ISO 8601 with timezone: '2024-01-15T00:00:00.000Z' - strip time for date fields",
+    "Workday phone numbers include country code and extension in separate fields - concatenate carefully",
+    "Workday org hierarchy comes as nested array - extract primary position only: worker.positions[0]",
+    "Salesforce upsert via /composite/sobjects requires externalIdFieldName in URL",
+    "Workday boolean fields come as true/false strings, not booleans in some versions",
+    "Terminated workers have Employment_Status = 'Terminated' - set IsActive = false in Salesforce"
+  ],
+  "keyMappings": {
+    "FirstName": "worker.name.First_Name",
+    "LastName": "worker.name.Last_Name",
+    "Email": "worker.email_addresses[0].Email_Address default null",
+    "Phone": "worker.phone_numbers[0].Full_Phone_Number default null",
+    "Title": "worker.positions[0].position_title default null",
+    "Department": "worker.positions[0].business_site_summary.Site_Name default null",
+    "Worker_ID__c": "worker.Worker_ID (external ID for upsert)",
+    "IsActive": "worker.employment_status.Employment_Status != 'Terminated'",
+    "ManagerId": "Lookup by worker.managers[0].Worker_ID - must be pre-resolved",
+    "AccountId": "Salesforce Account lookup via company name or external ID"
+  },
+  "workdayApiStructure": {
+    "restEndpoint": "GET /api/v1/{tenant}/workers",
+    "responseWrapper": "payload.data",
+    "pagination": "payload.total, payload.start, limit=100",
+    "raasReport": "Workday RaaS reports return differently - payload.Report_Entry array"
+  },
+  "dateConversion": "fun stripTime(d) = if (d != null and d != '') (d[0 to 9]) else null",
+  "connectors": ["workday-connector","salesforce-connector","http-connector"],
+  "salesforceOperation": "UPSERT on Worker_ID__c external ID",
+  "commonFailures": [
+    "positions array is empty for terminated workers - always use positions[0]? before accessing fields",
+    "email_addresses can be empty array - use [0]? not [0]",
+    "Workday tenant URL changes between environments - use properties placeholder",
+    "Manager circular reference: manager not yet synced to Salesforce - use two-pass sync",
+    "Phone format varies by country - Salesforce phone validation may reject some formats"
+  ]
+}

@@ -132,7 +132,29 @@
     .chat-input { font-size: 16px; }
     .msg-bubble { font-size: 13px; }
   }
+
+  .mule-form { display: flex; flex-direction: column; gap: 10px; padding: 1.25rem; }
+  .mule-form textarea.api-spec { min-height: 160px; font-family: 'Courier New', monospace; font-size: 12px; }
+  .mule-form input[type="text"] { width: 100%; padding: 9px 10px; font-size: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text); font-family: var(--font); }
+  .mule-form input[type="text"]:focus { outline: none; border-color: var(--blue); }
+  .pattern-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pattern-pill { padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 20px; border: 2px solid var(--border); background: #fff; color: var(--text-muted); cursor: pointer; font-family: var(--font); }
+  .pattern-pill.selected { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+  .project-output { margin-top: 1.25rem; display: none; }
+  .project-output.visible { display: block; }
+  .project-files { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .project-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-secondary); border-bottom: 1px solid var(--border); }
+  .project-title { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+  .project-badge { font-size: 11px; background: var(--green-light); color: var(--green); padding: 2px 9px; border-radius: 20px; font-weight: 700; }
+  .download-btn { padding: 8px 20px; font-size: 14px; font-weight: 700; background: var(--green); color: #fff; border: none; border-radius: 7px; cursor: pointer; font-family: var(--font); }
+  .download-btn:active { filter: brightness(0.9); }
+  .file-list { padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; }
+  .file-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; background: var(--bg-secondary); font-size: 12px; font-family: 'Courier New', monospace; color: var(--text-muted); }
+  .file-icon { color: var(--blue); flex-shrink: 0; }
+  .mule-progress-steps > div { margin-bottom: 4px; font-size: 13px; color: #1e3a5f; }
+
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
@@ -161,6 +183,7 @@
       <button class="tab active" onclick="switchTab('samples', this)">Paste samples</button>
       <button class="tab" onclick="switchTab('describe', this)">Describe</button>
       <button class="tab" onclick="switchTab('chat', this)">Chat with DWForge</button>
+      <button class="tab" onclick="switchTab('mule', this)">Mule project</button>
     </div>
 
     <!-- PASTE SAMPLES -->
@@ -481,6 +504,60 @@
     </div>
   </div>
 
+    <!-- MULE PROJECT FACTORY -->
+    <div id="panel-mule" class="panel">
+      <div class="mule-form">
+        <div class="form-group">
+          <label>App name</label>
+          <input type="text" id="mule-app-name" placeholder="e.g. salesforce-d365-sync" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Source system</label>
+            <select id="mule-src">
+              <optgroup label="CRM"><option>Salesforce</option><option>Microsoft Dynamics 365 CRM</option><option>ServiceNow</option><option>HubSpot</option></optgroup>
+              <optgroup label="ERP"><option>Microsoft D365 F&O</option><option>SAP S/4HANA</option><option>SAP ECC</option><option>NetSuite</option><option>Oracle ERP Cloud</option><option>Workday</option><option>Infor</option></optgroup>
+              <optgroup label="Data"><option>SQL Server</option><option>PostgreSQL</option><option>REST API</option><option>SFTP / File</option></optgroup>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Target system</label>
+            <select id="mule-tgt">
+              <optgroup label="ERP"><option>Microsoft D365 F&O</option><option>SAP S/4HANA</option><option>NetSuite</option><option>Oracle ERP Cloud</option><option>Workday</option></optgroup>
+              <optgroup label="CRM"><option>Salesforce</option><option>Microsoft Dynamics 365 CRM</option><option>ServiceNow</option></optgroup>
+              <optgroup label="Data"><option>SQL Server</option><option>PostgreSQL</option><option>REST API</option><option>SFTP / File</option></optgroup>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Integration pattern</label>
+          <div class="pattern-pills">
+            <div class="pattern-pill selected" onclick="selectPattern(this,'realtime')">Real-time API</div>
+            <div class="pattern-pill" onclick="selectPattern(this,'scheduled')">Scheduled batch</div>
+            <div class="pattern-pill" onclick="selectPattern(this,'async')">Async / event-driven</div>
+          </div>
+          <input type="hidden" id="mule-pattern" value="realtime" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>API spec (YAML / JSON) <span style="font-weight:400;text-transform:none">— optional</span></label>
+            <textarea class="api-spec" id="mule-apispec" placeholder="Paste your OpenAPI or RAML spec here. Leave empty to generate a standard flow."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Estimated volume <span style="font-weight:400;text-transform:none">— optional</span></label>
+            <input type="text" id="mule-volume" placeholder="e.g. 10,000 records/hour, 500 concurrent" style="margin-bottom:8px" />
+            <label style="margin-top:8px">Notes for DWForge</label>
+            <textarea class="plain" id="mule-notes" style="min-height:80px" placeholder="Any special requirements, error handling rules, or standards to follow."></textarea>
+          </div>
+        </div>
+        <button class="gen-btn" id="btn-mule" onclick="generateProject()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Generate Mule Project
+        </button>
+      </div>
+    </div>
+
+
   <div class="progress-wrap" id="progress-wrap">
     <div class="progress-bar-track"><div class="progress-bar-fill" id="progress-bar"></div></div>
     <div class="progress-msg" id="progress-msg"><div class="progress-spinner"></div>Starting...</div>
@@ -502,6 +579,20 @@
         <span class="expl-label">What this does and why</span>
         <span id="expl-text"></span>
       </div>
+    </div>
+  </div>
+
+
+  <div class="project-output" id="project-output">
+    <div class="project-files">
+      <div class="project-header">
+        <span class="project-title">Generated Mule Project</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="project-badge" id="project-badge">Ready to import</span>
+          <button class="download-btn" onclick="downloadZip()">Download ZIP</button>
+        </div>
+      </div>
+      <div class="file-list" id="project-file-list"></div>
     </div>
   </div>
 
@@ -546,6 +637,154 @@ function switchTab(name, el) {
   document.getElementById('err').classList.remove('visible');
   if (name === 'chat' && chatStep === -1) initChat();
 }
+
+let selectedPattern = 'realtime';
+let generatedProject = null;
+
+const muleProgressSteps = [
+  { msg: 'Parsing your API specification...', pct: 12 },
+  { msg: 'Retrieving production patterns...', pct: 25 },
+  { msg: 'Generating main flow XML...', pct: 40 },
+  { msg: 'Building error handlers...', pct: 55 },
+  { msg: 'Writing MUnit test suite...', pct: 68 },
+  { msg: 'Assembling pom.xml and properties...', pct: 82 },
+  { msg: 'Final validation...', pct: 94 },
+];
+
+function selectPattern(el, value) {
+  document.querySelectorAll('.pattern-pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('mule-pattern').value = value;
+  selectedPattern = value;
+}
+
+async function generateProject() {
+  const appName = document.getElementById('mule-app-name').value.trim();
+  const src = document.getElementById('mule-src').value;
+  const tgt = document.getElementById('mule-tgt').value;
+  const pattern = document.getElementById('mule-pattern').value;
+  const apiSpec = document.getElementById('mule-apispec').value.trim();
+  const volume = document.getElementById('mule-volume').value.trim();
+  const notes = document.getElementById('mule-notes').value.trim();
+  const err = document.getElementById('err');
+  const btn = document.getElementById('btn-mule');
+
+  if (!appName) {
+    err.textContent = 'Please enter an app name.';
+    err.classList.add('visible');
+    return;
+  }
+
+  err.classList.remove('visible');
+  document.getElementById('project-output').classList.remove('visible');
+  btn.disabled = true;
+
+  const wrap = document.getElementById('progress-wrap');
+  const bar = document.getElementById('progress-bar');
+  const msg = document.getElementById('progress-msg');
+  wrap.classList.add('visible');
+  bar.style.width = '5%';
+  bar.style.background = 'var(--blue)';
+  let step = 0;
+  const timer = setInterval(() => {
+    if (step < muleProgressSteps.length) {
+      bar.style.width = muleProgressSteps[step].pct + '%';
+      msg.innerHTML = '<div class="progress-spinner"></div>' + muleProgressSteps[step].msg;
+      step++;
+    }
+  }, 1800);
+
+  try {
+    const body = {
+      mode: 'mule-project',
+      appName,
+      sourceSystem: src,
+      targetSystem: tgt,
+      patternType: pattern,
+      apiSpec: apiSpec || null,
+      volume: volume || null,
+    };
+    if (notes) body.notes = notes;
+
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-secret': API_SECRET },
+      body: JSON.stringify(body),
+    });
+    clearInterval(timer);
+
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error || 'Project generation failed. Please try again.');
+    }
+
+    const data = await res.json();
+    generatedProject = data;
+
+    bar.style.width = '100%';
+    bar.style.background = 'var(--green)';
+    msg.innerHTML = 'Project ready. Download your ZIP.';
+    setTimeout(() => wrap.classList.remove('visible'), 2000);
+
+    renderProjectFiles(data);
+    document.getElementById('project-output').classList.add('visible');
+    setTimeout(() => document.getElementById('project-output').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
+  } catch (e) {
+    clearInterval(timer);
+    wrap.classList.remove('visible');
+    err.textContent = e.message;
+    err.classList.add('visible');
+  }
+  btn.disabled = false;
+}
+
+function renderProjectFiles(data) {
+  const list = document.getElementById('project-file-list');
+  const files = data.files || {};
+  list.innerHTML = Object.keys(files).map(path => {
+    const ext = path.split('.').pop();
+    const icons = { xml: '📄', yaml: '⚙️', yml: '⚙️', json: '{}', java: '☕', xml2: '📄', md: '📝' };
+    const icon = icons[ext] || '📄';
+    return `<div class="file-item"><span class="file-icon">${icon}</span>${path}</div>`;
+  }).join('');
+}
+
+async function downloadZip() {
+  if (!generatedProject || !generatedProject.files) return;
+  const btn = event.target;
+  const origText = btn.textContent;
+  btn.textContent = 'Building ZIP...';
+  btn.disabled = true;
+
+  try {
+    const zip = new JSZip();
+    const projectName = generatedProject.projectName || 'mule-project';
+    const folder = zip.folder(projectName);
+    const files = generatedProject.files;
+
+    Object.entries(files).forEach(([path, content]) => {
+      folder.file(path, content);
+    });
+
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = projectName + '.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    btn.textContent = 'Downloaded!';
+    setTimeout(() => { btn.textContent = origText; btn.disabled = false; }, 3000);
+  } catch (e) {
+    btn.textContent = 'Download failed — try again';
+    btn.disabled = false;
+    console.error('ZIP error:', e);
+  }
+}
+
 
 const progressSteps = [
   { msg: 'Reading your fields...', pct: 15 },
