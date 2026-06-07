@@ -6,10 +6,16 @@ export default async function handler(req, res) {
   res.setHeader('Referrer-Policy', 'no-referrer');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-secret');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
+  }
+
+  // Secret token check — reject unauthorized requests before anything else
+  const clientToken = req.headers['x-api-secret'];
+  if (!clientToken || clientToken !== process.env.API_SECRET_TOKEN) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   if (req.method !== 'POST') {
@@ -19,7 +25,6 @@ export default async function handler(req, res) {
   try {
     const { prompt } = req.body;
 
-    // Validate input — never log payload contents
     if (!prompt || typeof prompt !== 'string') {
       return res.status(400).json({ error: 'Prompt is required' });
     }
@@ -148,7 +153,6 @@ Then write 2-3 plain English sentences: what the transformation does, key decisi
     return res.status(200).json(data);
 
   } catch (err) {
-    // Log only that an error occurred — never log payload contents
     console.error('DWForge generate error:', err.message);
     return res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
