@@ -110,7 +110,7 @@ function validateProject(files) {
       if (!c.startsWith('<?xml')) errors.push(`${path}: missing XML declaration`);
       if ((path.includes('main') || path.includes('flow') || path.includes('common')) && !c.includes('xmlns="http://www.mulesoft.org/schema/mule/core"')) errors.push(`${path}: missing core Mule namespace`);
       if (c.includes('YOUR_') || c.includes('TODO') || c.includes('PLACEHOLDER')) errors.push(`${path}: contains placeholder text`);
-      if (/password\s*=\s*"[^${}][^"]{3,}"/.test(c)) errors.push(`${path}: possible hardcoded credential — use \${property.name}`);
+      if (/password\s*=\s*"[^${}][^"]{3,}"/.test(c)) errors.push(`${path}: possible hardcoded credential — use \\${property.name}`);
     }
     if (path === 'pom.xml') {
       if (!content.includes('mule-maven-plugin')) errors.push('pom.xml: missing mule-maven-plugin');
@@ -311,13 +311,13 @@ ERROR HANDLER XML must include:
 - Email alert component for CONNECTIVITY errors (use http:request to alert webhook)
 
 COMMON XML must include:
-- HTTP Listener config with ${http.port}
+- HTTP Listener config with \${http.port}
 - HTTP Request config for target system
 - Global property references
 
 APPLICATION.YAML properties:
 - http.port: 8081
-- All connector credentials as ${property.name} placeholders
+- All connector credentials as \${property.name} placeholders
 - Environment-specific values as placeholders only — never hardcode credentials
 
 LOG4J2.XML:
