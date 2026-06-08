@@ -269,11 +269,15 @@ const MULE_PROJECT_SYSTEM_PROMPT = "You are a senior MuleSoft architect followin
   + "[complete XML here]\n"
   + "===END===\n"
   + "\nENTERPRISE STANDARDS every main flow XML must follow:\n"
-  + "\n1. Set at flow ENTRY before any logic:\n"
-  + "   <set-variable variableName=\"transactionId\" value=\"#[correlationId]\"/>\n"
-  + "   <set-variable variableName=\"appName\" value=\"#[p('api.name')]\"/>\n"
-  + "   <set-variable variableName=\"step\" value=\"entry\"/>\n"
-  + "   <set-variable variableName=\"previousError\" value=\"#[null]\"/>\n"
+  + "\\n1. Set ALL entry variables in ONE ee:transform — never separate set-variable elements:\\n"
+  + "   <ee:transform doc:name=\"set-entry-variables\">\\n"
+  + "     <ee:variables>\\n"
+  + "       <ee:set-variable variableName=\"transactionId\"><![CDATA[%dw 2.0 output application/java --- correlationId]]></ee:set-variable>\\n"
+  + "       <ee:set-variable variableName=\"appName\"><![CDATA[%dw 2.0 output application/java --- \\\"{appname}\\\"]]></ee:set-variable>\\n"
+  + "       <ee:set-variable variableName=\"step\"><![CDATA[%dw 2.0 output application/java --- \"entry\"]]></ee:set-variable>\\n"
+  + "       <ee:set-variable variableName=\"previousError\"><![CDATA[%dw 2.0 output application/java --- null]]></ee:set-variable>\\n"
+  + "     </ee:variables>\\n"
+  + "   </ee:transform>\\n"
   + "\n2. Update vars.step at each stage: validate-request, transform-request, call-target, transform-response\n"
   + "\n3. Reference global configs by name — do NOT redefine:\n"
   + "   config-ref=\"{appname}-http-listener-config\"\n"
@@ -436,6 +440,22 @@ export default async function handler(req, res) {
       } catch (e) {
         console.error('Parse error:', e.message);
         return res.status(500).json({ error: 'Project generation failed. Please try again.' });
+      }
+
+      // Post-process Claude output — fix known Claude hallucinations in generated XML
+      for (const [path, content] of Object.entries(projectData.files)) {
+        if (path.endsWith('.xml')) {
+          projectData.files[path] = content
+            // Fix 1: Claude uses p('api.name') — replace with actual app name
+            .replace(/p\(\'api\.name\'\)/g, "'" + cleanAppName + "'")
+            .replace(/p\(\"api\.name\"\)/g, '"' + cleanAppName + '"')
+            .replace(/#\[p\(['"]api\.name['"]\)\]/g, cleanAppName)
+            // Fix 2: DataWeave reserved keyword 'type' must be quoted
+            .replace(/\btype:\s+error\.errorType/g, '"type": error.errorType')
+            .replace(/\btype:\s+vars\./g, '"type": vars.')
+            // Fix 3: Remove any remaining unclosed tags by truncation check
+            ;
+        }
       }
 
       // Sprint 6: Output validator — check before delivery
